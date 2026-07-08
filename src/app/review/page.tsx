@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Layers, Target } from "lucide-react";
+import { ArrowRight, BookOpen, Layers, Target, PlayCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const panels = [
   {
@@ -24,6 +25,12 @@ const panels = [
     description:
       "Pick your target exam and drill only the lessons that exam actually prioritizes.",
   },
+  {
+    href: null,
+    icon: PlayCircle,
+    title: "Articles & Videos",
+    description: "Written explainers and video lessons for every subject. Coming soon.",
+  },
 ];
 
 export default function ReviewHubPage() {
@@ -37,29 +44,51 @@ export default function ReviewHubPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {panels.map((panel, index) => (
-          <Link key={panel.href} href={panel.href}>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {panels.map((panel, index) => {
+          const card = (
             <Card
-              className="studio-card h-full flex flex-col animate-enter-up"
+              className={`studio-card h-full flex flex-col animate-enter-up ${
+                panel.href ? "" : "opacity-70 hover:-translate-y-0 hover:shadow-none"
+              }`}
               style={{ animationDelay: `${index * 90}ms` }}
             >
               <CardHeader>
                 <div className="flex items-center justify-between mb-6">
                   <span className="eyebrow">0{index + 1}</span>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background">
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                      panel.href ? "bg-foreground text-background" : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     <panel.icon className="h-4.5 w-4.5" />
                   </span>
                 </div>
                 <CardTitle className="text-xl">{panel.title}</CardTitle>
                 <CardDescription className="mt-2 leading-relaxed min-h-[3rem]">{panel.description}</CardDescription>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  Get started <ArrowRight className="h-3.5 w-3.5" />
-                </span>
+                {panel.href ? (
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                    Get started <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                ) : (
+                  <Badge variant="secondary" className="mt-4 w-fit rounded-full">
+                    Coming soon
+                  </Badge>
+                )}
               </CardHeader>
             </Card>
-          </Link>
-        ))}
+          );
+
+          return panel.href ? (
+            <Link key={panel.title} href={panel.href}>
+              {card}
+            </Link>
+          ) : (
+            <div key={panel.title} aria-disabled="true">
+              {card}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
