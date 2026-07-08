@@ -170,7 +170,10 @@ Build a ${weekCount}-week study plan that prioritizes the weakest subjects early
 
     if (saveError || !saved) {
       console.error("Failed to save study plan:", saveError);
-      return NextResponse.json({ error: "Failed to save the generated study plan" }, { status: 500 });
+      return NextResponse.json(
+        { error: `Failed to save the generated study plan: ${saveError?.message ?? "unknown error"}` },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true, plan: saved });
