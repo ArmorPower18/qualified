@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -22,7 +23,17 @@ function formatTime(totalSeconds: number) {
   return `${m}:${s}`;
 }
 
-export function MockTestRunner({ config, collegeSlug }: { config: MockTestConfig; collegeSlug: string }) {
+export function MockTestRunner({
+  config,
+  collegeSlug,
+  isPretest = false,
+}: {
+  config: MockTestConfig;
+  collegeSlug: string;
+  // True when this is the student's first attempt for this college — a free
+  // diagnostic that doesn't count against their plan's mock test quota (see /pricing).
+  isPretest?: boolean;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [phase, setPhase] = useState<Phase>("intro");
@@ -51,13 +62,14 @@ export function MockTestRunner({ config, collegeSlug }: { config: MockTestConfig
       user_id: userData.user.id,
       mock_test_id: `synthetic:${collegeSlug}`,
       college_id: college?.id ?? null,
+      is_pretest: isPretest,
       score: correctCount,
       total_questions: allQuestions.length,
       answers,
       completed_at: new Date().toISOString(),
     });
     setSaved(true);
-  }, [allQuestions, answers, collegeSlug, supabase]);
+  }, [allQuestions, answers, collegeSlug, isPretest, supabase]);
 
   const goToNextSection = useCallback(() => {
     if (isLastSection) {
@@ -82,9 +94,18 @@ export function MockTestRunner({ config, collegeSlug }: { config: MockTestConfig
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{config.name}</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle>{config.name}</CardTitle>
+            {isPretest && <Badge className="rounded-full">Free pre-test</Badge>}
+          </div>
         </CardHeader>
         <CardContent>
+          {isPretest && (
+            <p className="mb-3 text-sm text-foreground">
+              This is your free diagnostic for this exam — it doesn&apos;t count against your plan&apos;s
+              mock test limit. Take it now to see your starting point before you study.
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             This mock test has {config.sections.length} timed sections. Once a section&apos;s timer runs
             out, it auto-submits and you move to the next one — just like the real exam. You cannot go
@@ -181,7 +202,7 @@ export function MockTestRunner({ config, collegeSlug }: { config: MockTestConfig
     <Card>
       <CardHeader className="items-center text-center">
         <CheckCircle2 className="h-10 w-10 text-primary" />
-        <CardTitle className="mt-2">Test complete!</CardTitle>
+        <CardTitle className="mt-2">{isPretest ? "Pre-test complete!" : "Test complete!"}</CardTitle>
       </CardHeader>
       <CardContent className="text-center">
         <p className="text-4xl font-bold text-primary">{pct}%</p>

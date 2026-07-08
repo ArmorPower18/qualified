@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
+  BellRing,
   BookOpenCheck,
   CalendarClock,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MasteryChart } from "@/components/mastery-chart";
@@ -454,14 +456,35 @@ export default async function DashboardPage({
 
       {/* Score history + recent attempts */}
       {testsCompleted === 0 ? (
-        <Card className="studio-card mt-6">
-          <CardHeader>
-            <CardTitle>No {selectedCollege.examName} attempts yet</CardTitle>
-            <CardDescription>Take a mock test to start building your mastery history.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href={`/mock-test/${selectedCollege.slug}`} className={buttonVariants({ className: "rounded-lg" })}>
-              Take a mock test
+        <Card
+          className="mt-6 rounded-xl border-2 bg-card"
+          style={{ borderColor: `color-mix(in srgb, ${selectedCollege.color.bg} 45%, transparent)` }}
+        >
+          <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${selectedCollege.color.bg} 14%, transparent)`,
+                  color: selectedCollege.color.bg,
+                }}
+              >
+                <BellRing className="h-4.5 w-4.5" />
+              </span>
+              <div>
+                <p className="font-semibold">Your {selectedCollege.examName} pre-test is waiting</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  A free diagnostic mock test — see your starting point before you study. It won&apos;t
+                  count against your plan&apos;s mock test limit.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/mock-test/${selectedCollege.slug}`}
+              className={buttonVariants({ className: "shrink-0 rounded-lg" })}
+              style={{ backgroundColor: selectedCollege.color.bg, color: selectedCollege.color.fg }}
+            >
+              Take the pre-test
             </Link>
           </CardContent>
         </Card>
@@ -489,8 +512,13 @@ export default async function DashboardPage({
                   .reverse()
                   .map((a) => (
                     <li key={a.id} className="flex items-center justify-between border-b py-2 text-sm last:border-b-0">
-                      <span className="text-muted-foreground">
+                      <span className="flex items-center gap-2 text-muted-foreground">
                         {a.completed_at ? new Date(a.completed_at).toLocaleDateString() : "In progress"}
+                        {a.is_pretest && (
+                          <Badge variant="secondary" className="rounded-full text-[0.65rem]">
+                            Pre-test
+                          </Badge>
+                        )}
                       </span>
                       <span className="font-semibold text-primary">
                         {a.score ?? 0}/{a.total_questions ?? 0} (

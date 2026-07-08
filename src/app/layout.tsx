@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { OnboardingProvider } from "@/components/onboarding-provider";
+import { PretestNotice } from "@/components/pretest-notice";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
         <OnboardingProvider>
           <main className="flex-1">{children}</main>
         </OnboardingProvider>
+        <PretestNotice />
         <SiteFooter />
       </body>
     </html>

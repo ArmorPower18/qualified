@@ -70,6 +70,7 @@ export type MockTestAttempt = {
   user_id: string;
   mock_test_id: string;
   college_id: string | null;
+  is_pretest: boolean;
   score: number | null;
   total_questions: number | null;
   answers: Record<string, string>;
