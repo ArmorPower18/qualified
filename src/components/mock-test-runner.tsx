@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,16 +42,44 @@ export function MockTestRunner({
   const [secondsLeft, setSecondsLeft] = useState((config.sections[0]?.minutes ?? 0) * 60);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const section = config.sections[sectionIndex];
   const isLastSection = sectionIndex === config.sections.length - 1;
 
   const allQuestions = useMemo(() => config.sections.flatMap((s) => s.questions), [config.sections]);
 
+  // Per-section breakdown for the results screen — computed straight from what's
+  // already loaded, so it shows up even if the save to Supabase below fails.
+  const sectionBreakdown = useMemo(
+    () =>
+      config.sections
+        .map((s) => {
+          const correct = s.questions.filter((q) => answers[q.id] === q.correct_answer).length;
+          const unanswered = s.questions.filter((q) => !answers[q.id]).length;
+          const total = s.questions.length;
+          return {
+            name: s.name,
+            correct,
+            unanswered,
+            total,
+            pct: total > 0 ? Math.round((correct / total) * 100) : 0,
+          };
+        })
+        .sort((a, b) => a.pct - b.pct),
+    [config.sections, answers]
+  );
+
   const finishTest = useCallback(async () => {
     setPhase("results");
+    setSaving(true);
+    setSaveError(null);
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
+    if (!userData.user) {
+      setSaving(false);
+      return;
+    }
 
     const correctCount = allQuestions.filter((q) => answers[q.id] === q.correct_answer).length;
     const { data: college } = await supabase
@@ -59,7 +87,7 @@ export function MockTestRunner({
       .select("id")
       .eq("slug", collegeSlug)
       .single();
-    await supabase.from("mock_test_attempts").insert({
+    const { error: attemptError } = await supabase.from("mock_test_attempts").insert({
       user_id: userData.user.id,
       mock_test_id: `synthetic:${collegeSlug}`,
       college_id: college?.id ?? null,
@@ -69,6 +97,13 @@ export function MockTestRunner({
       answers,
       completed_at: new Date().toISOString(),
     });
+
+    if (attemptError) {
+      console.error("Failed to save mock test attempt:", attemptError);
+      setSaveError(attemptError.message);
+      setSaving(false);
+      return;
+    }
 
     // Feed subject mastery (and, for a pre-test, the AI study plan) with a
     // per-question row — same 'practice' bucket the practice-question flow
@@ -82,9 +117,11 @@ export function MockTestRunner({
       }))
     );
     if (questionAttemptRows.length > 0) {
-      await supabase.from("question_attempts").insert(questionAttemptRows);
+      const { error: questionAttemptError } = await supabase.from("question_attempts").insert(questionAttemptRows);
+      if (questionAttemptError) console.error("Failed to save question attempts:", questionAttemptError);
     }
 
+    setSaving(false);
     setSaved(true);
   }, [allQuestions, answers, collegeSlug, config.sections, isPretest, supabase]);
 
@@ -214,35 +251,105 @@ export function MockTestRunner({
 
   const correctCount = allQuestions.filter((q) => answers[q.id] === q.correct_answer).length;
   const pct = Math.round((correctCount / allQuestions.length) * 100);
+  const weakest = sectionBreakdown[0];
+  const strongest = sectionBreakdown[sectionBreakdown.length - 1];
+  const totalUnanswered = sectionBreakdown.reduce((sum, s) => sum + s.unanswered, 0);
 
   return (
-    <Card>
-      <CardHeader className="items-center text-center">
-        <CheckCircle2 className="h-10 w-10 text-primary" />
-        <CardTitle className="mt-2">{isPretest ? "Pre-test complete!" : "Test complete!"}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-center">
-        <p className="text-4xl font-bold text-primary">{pct}%</p>
-        <p className="text-muted-foreground">
-          {correctCount} out of {allQuestions.length} correct
-        </p>
-        {!saved && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Log in to save this attempt to your mastery dashboard.
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader className="items-center text-center">
+          <CheckCircle2 className="h-10 w-10 text-primary" />
+          <CardTitle className="mt-2">{isPretest ? "Pre-test complete!" : "Test complete!"}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          <p className="text-4xl font-bold text-primary">{pct}%</p>
+          <p className="text-muted-foreground">
+            {correctCount} out of {allQuestions.length} correct
+            {totalUnanswered > 0 && ` · ${totalUnanswered} unanswered`}
           </p>
-        )}
-        {saved && isPretest && (
-          <div className="mt-5 flex justify-center">
-            <GenerateStudyPlanButton collegeSlug={collegeSlug} />
+          {saving && <p className="mt-2 text-xs text-muted-foreground">Saving your results…</p>}
+          {saveError && (
+            <div className="mt-3 flex flex-col items-center gap-2">
+              <p className="flex items-center gap-1.5 text-xs text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5" /> Couldn&apos;t save this attempt: {saveError}
+              </p>
+              <Button size="sm" variant="outline" onClick={finishTest}>
+                Retry saving
+              </Button>
+            </div>
+          )}
+          {!saved && !saving && !saveError && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Log in to save this attempt to your mastery dashboard.
+            </p>
+          )}
+          {saved && isPretest && (
+            <div className="mt-5 flex justify-center">
+              <GenerateStudyPlanButton collegeSlug={collegeSlug} />
+            </div>
+          )}
+          <div className="mt-6 flex justify-center gap-3">
+            <Button variant="outline" onClick={() => router.push(`/colleges/${collegeSlug}`)}>
+              Back to {collegeSlug.toUpperCase()}
+            </Button>
+            {saved && <Button onClick={() => router.push("/dashboard")}>View dashboard</Button>}
           </div>
-        )}
-        <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" onClick={() => router.push(`/colleges/${collegeSlug}`)}>
-            Back to {collegeSlug.toUpperCase()}
-          </Button>
-          {saved && <Button onClick={() => router.push("/dashboard")}>View dashboard</Button>}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Section insights</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {weakest && strongest && weakest.name !== strongest.name && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <p className="text-xs font-medium text-destructive">Weakest section</p>
+                <p className="mt-1 text-sm font-semibold">{weakest.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {weakest.correct}/{weakest.total} correct ({weakest.pct}%)
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Strongest section</p>
+                <p className="mt-1 text-sm font-semibold">{strongest.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {strongest.correct}/{strongest.total} correct ({strongest.pct}%)
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {sectionBreakdown.map((s) => (
+              <div key={s.name}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2 font-medium">
+                    {s.name}
+                    {s.pct < 60 && (
+                      <Badge variant="destructive" className="rounded-full text-[0.65rem]">
+                        Needs work
+                      </Badge>
+                    )}
+                    {s.pct >= 80 && (
+                      <Badge variant="secondary" className="rounded-full text-[0.65rem]">
+                        Strong
+                      </Badge>
+                    )}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {s.correct}/{s.total} ({s.pct}%)
+                    {s.unanswered > 0 && ` · ${s.unanswered} blank`}
+                  </span>
+                </div>
+                <Progress value={s.pct} className="mt-1.5" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
