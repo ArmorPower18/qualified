@@ -14,6 +14,7 @@ export function QuestionCard({
   index,
   subjectLabel,
   attemptSource,
+  collegeId,
 }: {
   question: Question;
   index: number;
@@ -21,6 +22,9 @@ export function QuestionCard({
   // Omitted for sample/fallback questions (no real DB row to attribute the attempt to).
   subjectLabel?: string;
   attemptSource?: QuestionAttemptSource;
+  // Null for exam-agnostic attempts (general review) so the dashboard can scope
+  // subject mastery to whichever exam is selected.
+  collegeId?: string | null;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -36,6 +40,7 @@ export function QuestionCard({
       user_id: userData.user.id,
       source: attemptSource,
       subject_label: subjectLabel,
+      college_id: collegeId ?? null,
       is_correct: key === question.correct_answer,
     });
   }

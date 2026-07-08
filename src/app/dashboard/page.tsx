@@ -138,10 +138,16 @@ export default async function DashboardPage({
   const totalScore = typedAttempts.reduce((sum, a) => sum + (a.score ?? 0), 0);
   const averageScorePct = totalQuestionsAnswered > 0 ? Math.round((totalScore / totalQuestionsAnswered) * 100) : 0;
 
+  // Time studied for this exam = its own exam-focus review sessions plus every
+  // exam-agnostic session (general review, flashcards — college_id null on those).
+  const examOrGeneralFilter = selectedCollegeId
+    ? `college_id.eq.${selectedCollegeId},college_id.is.null`
+    : "college_id.is.null";
   const { data: reviewAttempts } = await supabase
     .from("review_attempts")
     .select("*")
     .eq("user_id", user.id)
+    .or(examOrGeneralFilter)
     .order("completed_at", { ascending: false });
 
   const typedReviewAttempts = (reviewAttempts as ReviewAttempt[]) ?? [];
@@ -163,12 +169,13 @@ export default async function DashboardPage({
 
   // Subject mastery: accuracy per subject from practice + review questions only.
   // Flashcards never write to question_attempts (self-reported, not graded), so they're
-  // excluded automatically. This spans every exam a student has practiced, not just the
-  // one currently focused in the tabs above.
+  // excluded automatically. Scoped to this exam's practice/exam-focus attempts plus
+  // exam-agnostic general review (college_id null on those), same rule as time studied.
   const { data: questionAttempts } = await supabase
     .from("question_attempts")
     .select("*")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .or(examOrGeneralFilter);
 
   const typedQuestionAttempts = (questionAttempts as QuestionAttempt[]) ?? [];
   const masteryBySubject = new Map<string, { correct: number; total: number }>();

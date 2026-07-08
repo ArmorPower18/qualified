@@ -113,6 +113,7 @@ export function MockTestRunner({
         user_id: userData.user!.id,
         source: "practice" as const,
         subject_label: s.name,
+        college_id: college?.id ?? null,
         is_correct: answers[q.id] === q.correct_answer,
       }))
     );

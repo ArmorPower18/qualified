@@ -174,6 +174,9 @@ export type QuestionAttempt = {
   source: QuestionAttemptSource;
   subject_label: string;
   is_correct: boolean;
+  // Null for exam-agnostic attempts (general review); set for practice and
+  // exam-focus review so subject mastery can be scoped to one exam.
+  college_id: string | null;
   answered_at: string;
 };
 

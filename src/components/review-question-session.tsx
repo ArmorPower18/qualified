@@ -90,6 +90,7 @@ export function ReviewQuestionSession({
           index={i}
           subjectLabel={lessonSubjectNames[questions[i].lesson_id] ?? "General"}
           attemptSource={attemptSource}
+          collegeId={collegeId}
         />
       ))}
 
