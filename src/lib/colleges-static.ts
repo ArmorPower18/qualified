@@ -3,6 +3,12 @@
 
 export type StaticSubject = { slug: string; name: string; description: string };
 
+// Each school's brand color, used to tint exam-scoped widgets on the dashboard
+// (focus hero, active exam tab, chart line) so the selected exam reads at a glance.
+// `scheme` says whether `bg` reads as a dark or light surface — used to pick
+// matching native form-control chrome (e.g. the date input) on top of it.
+export type CollegeColor = { bg: string; fg: string; scheme: "light" | "dark" };
+
 export type StaticCollege = {
   slug: string;
   name: string;
@@ -11,6 +17,7 @@ export type StaticCollege = {
   subjects: StaticSubject[];
   // Official crest, provided by the site owner (public/logos/*.png).
   logo: string;
+  color: CollegeColor;
 };
 
 export const STATIC_COLLEGES: StaticCollege[] = [
@@ -20,6 +27,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     examName: "UPCAT",
     description: "UP College Admission Test",
     logo: "/logos/up.png",
+    color: { bg: "#7B0828", fg: "#F5EAD9", scheme: "dark" },
     subjects: [
       { slug: "language-proficiency",    name: "Language Proficiency",    description: "Grammar, vocabulary, reading, and Filipino language" },
       { slug: "science-proficiency",     name: "Science Proficiency",     description: "Biology, chemistry, physics, and earth science" },
@@ -33,6 +41,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     examName: "ACET",
     description: "Ateneo College Entrance Test",
     logo: "/logos/admu.png",
+    color: { bg: "#0033A0", fg: "#F2F5FC", scheme: "dark" },
     subjects: [
       { slug: "english-proficiency",    name: "English Proficiency",    description: "Vocabulary, grammar, and sentence construction" },
       { slug: "mathematics-proficiency", name: "Mathematics Proficiency", description: "Algebra, geometry, and quantitative reasoning" },
@@ -49,6 +58,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     examName: "DCAT",
     description: "DLSU College Admission Test",
     logo: "/logos/dlsu.png",
+    color: { bg: "#046A38", fg: "#F1F9F3", scheme: "dark" },
     subjects: [
       { slug: "mental-ability",          name: "Mental Ability",                        description: "Logical, abstract, and analytical thinking" },
       { slug: "writing-skills-language", name: "Writing Skills & Language Proficiency", description: "Grammar, writing, and language use" },
@@ -64,6 +74,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     examName: "USTET",
     description: "UST Entrance Test",
     logo: "/logos/ust.png",
+    color: { bg: "#FDB913", fg: "#241800", scheme: "light" },
     subjects: [
       { slug: "mental-ability",          name: "Mental Ability",          description: "Reasoning, logic, and abstract thinking" },
       { slug: "english-proficiency",     name: "English Proficiency",     description: "Grammar, vocabulary, and English comprehension" },

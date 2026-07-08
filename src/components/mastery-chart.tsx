@@ -3,7 +3,7 @@
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { MockTestAttempt } from "@/lib/types";
 
-export function MasteryChart({ attempts }: { attempts: MockTestAttempt[] }) {
+export function MasteryChart({ attempts, color }: { attempts: MockTestAttempt[]; color?: string }) {
   const data = attempts.map((a, i) => ({
     label: `Attempt ${i + 1}`,
     pct: a.total_questions ? Math.round(((a.score ?? 0) / a.total_questions) * 100) : 0,
@@ -17,7 +17,7 @@ export function MasteryChart({ attempts }: { attempts: MockTestAttempt[] }) {
           <XAxis dataKey="label" fontSize={12} tickLine={false} />
           <YAxis domain={[0, 100]} fontSize={12} tickLine={false} />
           <Tooltip />
-          <Line type="monotone" dataKey="pct" stroke="var(--color-primary)" strokeWidth={2} dot />
+          <Line type="monotone" dataKey="pct" stroke={color ?? "var(--color-primary)"} strokeWidth={2} dot />
         </LineChart>
       </ResponsiveContainer>
     </div>

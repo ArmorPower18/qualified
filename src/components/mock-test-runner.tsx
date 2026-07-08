@@ -42,9 +42,15 @@ export function MockTestRunner({ config, collegeSlug }: { config: MockTestConfig
     if (!userData.user) return;
 
     const correctCount = allQuestions.filter((q) => answers[q.id] === q.correct_answer).length;
+    const { data: college } = await supabase
+      .from("colleges")
+      .select("id")
+      .eq("slug", collegeSlug)
+      .single();
     await supabase.from("mock_test_attempts").insert({
       user_id: userData.user.id,
       mock_test_id: `synthetic:${collegeSlug}`,
+      college_id: college?.id ?? null,
       score: correctCount,
       total_questions: allQuestions.length,
       answers,

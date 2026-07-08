@@ -1,16 +1,35 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  ArrowRight,
+  BookOpenCheck,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Timer,
+  Trophy,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { MasteryChart } from "@/components/mastery-chart";
 import { Progress } from "@/components/ui/progress";
-import type { MockTestAttempt, ReviewAttempt, QuestionAttempt } from "@/lib/types";
+import { MasteryChart } from "@/components/mastery-chart";
+import { DashboardExamTabs } from "@/components/dashboard-exam-tabs";
+import { DashboardTestDate } from "@/components/dashboard-test-date";
+import { STATIC_COLLEGES, getStaticCollege } from "@/lib/colleges-static";
+import type { MockTestAttempt, ReviewAttempt, QuestionAttempt, TargetExam } from "@/lib/types";
 
 const modeLabels: Record<ReviewAttempt["mode"], string> = {
   flashcard: "Flashcards",
   general: "General Review",
   exam_focus: "Exam Focus Review",
+};
+
+const EXAM_NAME_TO_SLUG: Record<TargetExam, string> = {
+  UPCAT: "up",
+  ACET: "admu",
+  DCAT: "dlsu",
+  USTET: "ust",
 };
 
 function formatDuration(totalSeconds: number) {
@@ -21,7 +40,44 @@ function formatDuration(totalSeconds: number) {
   return `${hours}h ${minutes}m`;
 }
 
-export default async function DashboardPage() {
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  icon: typeof Timer;
+  label: string;
+  value: string;
+  hint?: string;
+  accent: string;
+}) {
+  return (
+    <Card className="studio-card">
+      <CardContent className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="mt-1.5 text-3xl font-semibold">{value}</p>
+          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        </div>
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: `color-mix(in srgb, ${accent} 14%, transparent)`, color: accent }}
+        >
+          <Icon className="h-4.5 w-4.5" />
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ exam?: string }>;
+}) {
+  const { exam: examParam } = await searchParams;
   const supabase = await createClient();
   const user = await supabase.auth
     .getUser()
@@ -30,13 +86,41 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
+  const [{ data: profile }, { data: onboarding }, { data: collegeRows }] = await Promise.all([
+    supabase.from("profiles").select("target_college_id, test_date").eq("id", user.id).maybeSingle(),
+    supabase.from("onboarding_responses").select("target_exams").eq("user_id", user.id).maybeSingle(),
+    supabase.from("colleges").select("id, slug").eq("is_custom", false),
+  ]);
+
+  const idToSlug = new Map((collegeRows ?? []).map((c) => [c.id as string, c.slug as string]));
+  const slugToId = new Map((collegeRows ?? []).map((c) => [c.slug as string, c.id as string]));
+
+  let selectedSlug =
+    examParam && STATIC_COLLEGES.some((c) => c.slug === examParam) ? examParam : undefined;
+  if (!selectedSlug && profile?.target_college_id) {
+    selectedSlug = idToSlug.get(profile.target_college_id);
+  }
+  if (!selectedSlug && onboarding?.target_exams?.length) {
+    selectedSlug = EXAM_NAME_TO_SLUG[onboarding.target_exams[0] as TargetExam];
+  }
+  if (!selectedSlug) selectedSlug = "up";
+
+  const selectedCollege = getStaticCollege(selectedSlug) ?? STATIC_COLLEGES[0];
+  const selectedCollegeId = slugToId.get(selectedSlug) ?? null;
+
   const { data: attempts } = await supabase
     .from("mock_test_attempts")
     .select("*")
     .eq("user_id", user.id)
+    .eq("college_id", selectedCollegeId)
+    .not("completed_at", "is", null)
     .order("completed_at", { ascending: true });
 
   const typedAttempts = (attempts as MockTestAttempt[]) ?? [];
+  const testsCompleted = typedAttempts.length;
+  const totalQuestionsAnswered = typedAttempts.reduce((sum, a) => sum + (a.total_questions ?? 0), 0);
+  const totalScore = typedAttempts.reduce((sum, a) => sum + (a.score ?? 0), 0);
+  const averageScorePct = totalQuestionsAnswered > 0 ? Math.round((totalScore / totalQuestionsAnswered) * 100) : 0;
 
   const { data: reviewAttempts } = await supabase
     .from("review_attempts")
@@ -45,12 +129,12 @@ export default async function DashboardPage() {
     .order("completed_at", { ascending: false });
 
   const typedReviewAttempts = (reviewAttempts as ReviewAttempt[]) ?? [];
-
   const totalStudySeconds = typedReviewAttempts.reduce((sum, a) => sum + (a.duration_seconds ?? 0), 0);
 
   // Subject mastery: accuracy per subject from practice + review questions only.
   // Flashcards never write to question_attempts (self-reported, not graded), so they're
-  // excluded automatically.
+  // excluded automatically. This spans every exam a student has practiced, not just the
+  // one currently focused in the tabs above.
   const { data: questionAttempts } = await supabase
     .from("question_attempts")
     .select("*")
@@ -73,16 +157,177 @@ export default async function DashboardPage() {
     }))
     .sort((a, b) => b.total - a.total);
 
+  const weakestSubjects = subjectMastery
+    .slice()
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 2);
+
+  // Countdown to the student's test date. Stored on their profile (editable inline);
+  // there's no fabricated default — an empty state prompts them to set one.
+  const testDate = profile?.test_date ? new Date(`${profile.test_date}T00:00:00`) : null;
+  // Server Components render fresh per request rather than being memoized, so reading
+  // the current time here doesn't create the staleness the purity rule guards against.
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const daysRemaining = testDate ? Math.ceil((testDate.getTime() - now) / (1000 * 60 * 60 * 24)) : null;
+
+  const displayName = (() => {
+    const local = user.email?.split("@")[0] ?? "there";
+    const first = local.split(/[._\-+0-9]/).filter(Boolean)[0] ?? local;
+    return first.charAt(0).toUpperCase() + first.slice(1);
+  })();
+
+  // Next milestone: a small, honestly-computed nudge rather than a fabricated plan.
+  // Baseline first (need >=3 attempts for a reliable average), then the weakest
+  // tracked subject, then a generic "stay sharp" nudge once both are healthy.
+  const milestone = (() => {
+    if (testsCompleted < 3) {
+      const remaining = 3 - testsCompleted;
+      return {
+        title: "Build a three-test baseline",
+        description: `Complete ${remaining} more mock test${remaining === 1 ? "" : "s"} to see a more reliable average.`,
+        progress: Math.round((testsCompleted / 3) * 100),
+      };
+    }
+    const weakest = weakestSubjects[0];
+    if (weakest && weakest.pct < 70) {
+      return {
+        title: `Push ${weakest.subject} past 70%`,
+        description: `You're at ${weakest.pct}% there — keep practicing to close the gap.`,
+        progress: Math.round((weakest.pct / 70) * 100),
+      };
+    }
+    return {
+      title: "Keep the streak going",
+      description: "You're on track across every tracked subject — take another mock test to stay sharp.",
+      progress: 100,
+    };
+  })();
+
   return (
     <div className="editorial-shell max-w-4xl py-10">
-      <div className="border-b border-foreground/15 pb-6">
-        <p className="eyebrow">Progress</p>
-        <h1 className="mt-3 text-4xl font-semibold leading-tight md:text-5xl">Your mastery dashboard</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Track your mock test performance over time and spot where to focus next.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-foreground/15 pb-6">
+        <div>
+          <p className="eyebrow">Progress</p>
+          <h1 className="mt-3 text-4xl font-semibold leading-tight md:text-5xl">
+            Good to see you, {displayName}.
+          </h1>
+          <p className="mt-3 max-w-2xl text-muted-foreground">
+            Choose an exam, then take one useful step forward.
+          </p>
+        </div>
+        <DashboardExamTabs selectedSlug={selectedSlug} slugToId={Object.fromEntries(slugToId)} />
       </div>
 
+      {/* Focus hero — tinted with the selected school's brand color */}
+      <div
+        className="mt-6 grid gap-5 overflow-hidden rounded-xl md:grid-cols-[1.4fr_1fr]"
+        style={{ backgroundColor: selectedCollege.color.bg, color: selectedCollege.color.fg }}
+      >
+        <div className="p-6 md:p-8">
+          <p className="eyebrow" style={{ color: `color-mix(in srgb, ${selectedCollege.color.fg} 60%, transparent)` }}>
+            Focusing on {selectedCollege.examName}
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold leading-tight md:text-4xl">
+            {daysRemaining !== null
+              ? daysRemaining >= 0
+                ? `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} to turn preparation into confidence.`
+                : "Test day has passed — log it and set your next one."
+              : "Set a test date to start your countdown."}
+          </h2>
+          <p className="mt-3 max-w-md text-sm" style={{ color: `color-mix(in srgb, ${selectedCollege.color.fg} 75%, transparent)` }}>
+            {selectedCollege.description}, organized into questions, lessons, and realistic mock tests.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href={`/colleges/${selectedCollege.slug}`}
+              className={buttonVariants({ className: "rounded-lg border-transparent hover:opacity-90" })}
+              style={{ backgroundColor: selectedCollege.color.fg, color: selectedCollege.color.bg }}
+            >
+              Start a study session
+            </Link>
+            <Link
+              href={`/mock-test/${selectedCollege.slug}`}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: `color-mix(in srgb, ${selectedCollege.color.fg} 16%, transparent)`,
+                color: selectedCollege.color.fg,
+              }}
+            >
+              Browse mock tests <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+        <div
+          className="flex flex-col justify-between gap-6 p-6 md:p-8"
+          style={{ borderTop: `1px solid color-mix(in srgb, ${selectedCollege.color.fg} 15%, transparent)` }}
+        >
+          <div>
+            <p
+              className="flex items-center gap-1.5 text-xs font-medium"
+              style={{ color: `color-mix(in srgb, ${selectedCollege.color.fg} 60%, transparent)` }}
+            >
+              <CalendarClock className="h-3.5 w-3.5" /> {selectedCollege.examName} test date
+            </p>
+            <p className="mt-2 text-xl font-semibold">
+              {testDate
+                ? testDate.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
+                : "Not set yet"}
+            </p>
+            <div className="mt-4">
+              <DashboardTestDate initialDate={profile?.test_date ?? null} accent={selectedCollege.color} />
+            </div>
+          </div>
+          {daysRemaining !== null && daysRemaining >= 0 && (
+            <div
+              className="flex items-center gap-3 rounded-lg px-4 py-3"
+              style={{ backgroundColor: `color-mix(in srgb, ${selectedCollege.color.fg} 12%, transparent)` }}
+            >
+              <Timer className="h-4 w-4" style={{ color: `color-mix(in srgb, ${selectedCollege.color.fg} 70%, transparent)` }} />
+              <div>
+                <p className="text-xs" style={{ color: `color-mix(in srgb, ${selectedCollege.color.fg} 60%, transparent)` }}>
+                  Countdown
+                </p>
+                <p className="text-lg font-semibold">{daysRemaining} days remaining</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stat tiles */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile
+          icon={CheckCircle2}
+          label="Tests completed"
+          value={String(testsCompleted)}
+          hint={`${selectedCollege.examName} mock tests submitted`}
+          accent={selectedCollege.color.bg}
+        />
+        <StatTile
+          icon={Trophy}
+          label="Average score"
+          value={testsCompleted > 0 ? `${averageScorePct}%` : "—"}
+          hint={`Across ${selectedCollege.examName} attempts`}
+          accent={selectedCollege.color.bg}
+        />
+        <StatTile
+          icon={BookOpenCheck}
+          label="Questions answered"
+          value={String(totalQuestionsAnswered)}
+          hint={`${selectedCollege.examName} mock tests`}
+          accent={selectedCollege.color.bg}
+        />
+        <StatTile
+          icon={ClipboardList}
+          label="Current exam"
+          value={selectedCollege.examName}
+          hint={selectedCollege.name}
+          accent={selectedCollege.color.bg}
+        />
+      </div>
+
+      {/* Mastery + time studied */}
       <div className="mt-6 grid gap-5 md:grid-cols-[1.3fr_0.7fr]">
         <Card className="studio-card">
           <CardHeader>
@@ -129,16 +374,81 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {typedAttempts.length === 0 ? (
-        <Card className="studio-card mt-6">
+      {/* Focus areas + milestone */}
+      <div className="mt-6 grid gap-5 md:grid-cols-[1.3fr_0.7fr]">
+        <Card className="studio-card">
           <CardHeader>
-            <CardTitle>No attempts yet</CardTitle>
-            <CardDescription>
-              Take a mock test to start building your mastery history.
-            </CardDescription>
+            <CardTitle>Focus areas</CardTitle>
+            <CardDescription>Your lowest-accuracy subjects, worth prioritizing next.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/mock-test" className={buttonVariants()}>
+            {weakestSubjects.length === 0 ? (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-sm text-muted-foreground">
+                  No graded attempts yet — practice a few questions to surface where to focus.
+                </p>
+                <Link href={`/colleges/${selectedCollege.slug}`} className={buttonVariants({ variant: "outline", className: "rounded-lg" })}>
+                  Go to {selectedCollege.examName}
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {weakestSubjects.map((s) => (
+                  <div key={s.subject} className="flex items-center justify-between gap-3 border-b border-border pb-3 last:border-b-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-medium">{s.subject}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.correct}/{s.total} correct
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary">{s.pct}%</span>
+                  </div>
+                ))}
+                <div className="flex flex-wrap gap-3 pt-1">
+                  <Link href="/review" className={buttonVariants({ size: "sm", variant: "outline", className: "rounded-lg" })}>
+                    Go to Review
+                  </Link>
+                  <Link
+                    href={`/colleges/${selectedCollege.slug}`}
+                    className={buttonVariants({ size: "sm", variant: "outline", className: "rounded-lg" })}
+                  >
+                    Practice {selectedCollege.examName}
+                  </Link>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col overflow-hidden rounded-xl bg-foreground text-background">
+          <div className="flex flex-1 flex-col justify-between p-5">
+            <div className="flex items-center gap-2 text-background/60">
+              <Trophy className="h-4 w-4" />
+              <p className="text-xs font-medium">Next milestone</p>
+            </div>
+            <div className="mt-3">
+              <p className="text-lg font-semibold leading-snug">{milestone.title}</p>
+              <p className="mt-1.5 text-sm text-background/70">{milestone.description}</p>
+            </div>
+            <div className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-background/15">
+              <div
+                className="h-full rounded-full bg-background transition-all"
+                style={{ width: `${Math.min(100, Math.max(0, milestone.progress))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Score history + recent attempts */}
+      {testsCompleted === 0 ? (
+        <Card className="studio-card mt-6">
+          <CardHeader>
+            <CardTitle>No {selectedCollege.examName} attempts yet</CardTitle>
+            <CardDescription>Take a mock test to start building your mastery history.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href={`/mock-test/${selectedCollege.slug}`} className={buttonVariants({ className: "rounded-lg" })}>
               Take a mock test
             </Link>
           </CardContent>
@@ -148,16 +458,17 @@ export default async function DashboardPage() {
           <Card className="studio-card">
             <CardHeader>
               <CardTitle>Score over time</CardTitle>
-              <CardDescription>Percentage correct per completed mock test attempt</CardDescription>
+              <CardDescription>Percentage correct per completed {selectedCollege.examName} attempt</CardDescription>
             </CardHeader>
             <CardContent>
-              <MasteryChart attempts={typedAttempts} />
+              <MasteryChart attempts={typedAttempts} color={selectedCollege.color.bg} />
             </CardContent>
           </Card>
 
           <Card className="studio-card">
             <CardHeader>
-              <CardTitle>Recent attempts</CardTitle>
+              <CardTitle>Recent test results</CardTitle>
+              <CardDescription>Your completed mock tests, newest first</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="flex flex-col gap-2">
@@ -165,7 +476,7 @@ export default async function DashboardPage() {
                   .slice()
                   .reverse()
                   .map((a) => (
-                    <li key={a.id} className="flex items-center justify-between border-b py-2 text-sm">
+                    <li key={a.id} className="flex items-center justify-between border-b py-2 text-sm last:border-b-0">
                       <span className="text-muted-foreground">
                         {a.completed_at ? new Date(a.completed_at).toLocaleDateString() : "In progress"}
                       </span>
@@ -194,14 +505,14 @@ export default async function DashboardPage() {
                   No review sessions yet — General Review and Exam Focus Review count toward your
                   subject mastery above; flashcard time is tracked here too.
                 </p>
-                <Link href="/review" className={buttonVariants({ variant: "outline", className: "rounded-md" })}>
+                <Link href="/review" className={buttonVariants({ variant: "outline", className: "rounded-lg" })}>
                   Go to Review
                 </Link>
               </div>
             ) : (
               <ul className="flex flex-col gap-2">
                 {typedReviewAttempts.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between border-b py-2 text-sm">
+                  <li key={a.id} className="flex items-center justify-between border-b py-2 text-sm last:border-b-0">
                     <span className="text-muted-foreground">
                       {modeLabels[a.mode]} ·{" "}
                       {a.completed_at ? new Date(a.completed_at).toLocaleDateString() : "In progress"}

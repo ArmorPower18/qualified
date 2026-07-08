@@ -23,6 +23,8 @@ export async function getCustomCollege(collegeSlug: string): Promise<StaticColle
       description: data.description ?? "",
       subjects: [],
       logo: "",
+      // Custom CETs have no official brand color, so they get a neutral slate.
+      color: { bg: "#1F2937", fg: "#F3F4F6", scheme: "dark" },
     };
   } catch {
     return null;
