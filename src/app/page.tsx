@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Layers, LineChart, Timer } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,18 +11,21 @@ const pillars = [
     label: "01",
     title: "Timed exam pressure",
     description: "Full-length mock tests tuned for UPCAT, ACET, DCAT, and USTET pacing.",
+    tags: ["Section countdown", "Auto-submit"],
   },
   {
     icon: Layers,
     label: "02",
     title: "Focused review loops",
     description: "Practice questions, flashcards, and explanations organized by lesson.",
+    tags: ["General Review", "Exam Focus"],
   },
   {
     icon: LineChart,
     label: "03",
     title: "Visible progress",
     description: "Track accuracy patterns so the next study session has a clear target.",
+    tags: ["Subject mastery", "Time studied"],
   },
 ];
 
@@ -66,18 +70,35 @@ export default function Home() {
           <div className="animate-enter-up self-end [animation-delay:180ms]">
             <div className="rule-grid border border-foreground/15 bg-card/70 p-3">
               <div className="grid overflow-hidden border border-foreground/20 bg-background sm:aspect-[4/5] sm:grid-rows-[1fr_auto]">
-                <div className="grid sm:grid-cols-2">
-                  <div className="border-b border-foreground/15 p-5 sm:border-r sm:border-b-0">
+                <div className="grid sm:grid-cols-2 sm:min-h-[28rem]">
+                  <div className="border-b border-foreground/15 p-6 sm:border-r sm:border-b-0">
                     <p className="eyebrow">Active session</p>
                     <p className="mt-4 text-6xl font-semibold tracking-normal">84%</p>
                     <p className="mt-2 text-sm text-muted-foreground">Reading accuracy</p>
-                  </div>
-                  <div className="flex flex-col justify-between p-5">
-                    <div>
-                      <p className="eyebrow">Next block</p>
-                      <p className="mt-4 text-xl font-semibold leading-tight sm:text-2xl">Science drills</p>
+                    <div className="mt-8 space-y-4 border-t border-foreground/15 pt-6">
+                      {[
+                        { label: "Math accuracy", value: 76 },
+                        { label: "Science accuracy", value: 68 },
+                      ].map((stat, index) => (
+                        <div key={stat.label}>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{stat.label}</span>
+                            <span className="font-medium text-foreground">{stat.value}%</span>
+                          </div>
+                          <div className="mt-2 h-1.5 bg-muted">
+                            <div
+                              className="h-full bg-foreground animate-line-reveal"
+                              style={{ width: `${stat.value}%`, animationDelay: `${index * 120 + 420}ms` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="space-y-2">
+                  </div>
+                  <div className="flex flex-col p-6">
+                    <p className="eyebrow">Next block</p>
+                    <p className="mt-4 text-xl font-semibold leading-tight sm:text-2xl">Science drills</p>
+                    <div className="mt-6 space-y-2.5">
                       {[72, 48, 86].map((width, index) => (
                         <div key={index} className="h-2 bg-muted">
                           <div
@@ -86,6 +107,20 @@ export default function Home() {
                           />
                         </div>
                       ))}
+                    </div>
+                    <div className="mt-8 flex-1 space-y-4 border-t border-foreground/15 pt-6 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Study streak</span>
+                        <span className="font-medium">4 days</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Flashcards reviewed</span>
+                        <span className="font-medium">128</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Mock tests taken</span>
+                        <span className="font-medium">3</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -114,8 +149,8 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="editorial-shell py-12">
-        <div className="grid gap-6 border-b border-foreground/15 pb-6 md:grid-cols-[0.7fr_1fr]">
+      <section className="editorial-shell py-10">
+        <div className="grid gap-6 border-b border-foreground/15 pb-6 md:grid-cols-[0.5fr_1fr]">
           <p className="eyebrow">Study system</p>
           <h2 className="text-3xl font-semibold leading-tight md:text-4xl">
             A cleaner path from review material to measurable readiness.
@@ -123,7 +158,7 @@ export default function Home() {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {pillars.map((pillar) => (
-            <Card key={pillar.title} className="studio-card animate-enter-up">
+            <Card key={pillar.title} className="studio-card animate-enter-up flex h-full flex-col">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <span className="eyebrow">{pillar.label}</span>
@@ -134,6 +169,16 @@ export default function Home() {
                 <CardTitle className="mt-8 text-xl">{pillar.title}</CardTitle>
                 <CardDescription className="leading-relaxed">{pillar.description}</CardDescription>
               </CardHeader>
+              <CardContent className="mt-auto flex flex-wrap gap-2 border-t border-foreground/15 pt-4">
+                {pillar.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-foreground/15 bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -155,18 +200,41 @@ export default function Home() {
           <div className="grid gap-3 sm:grid-cols-2">
             {STATIC_COLLEGES.map((college, index) => (
               <Link key={college.slug} href={`/colleges/${college.slug}`}>
-                <Card className="studio-card h-full animate-enter-up" style={{ animationDelay: `${index * 80}ms` }}>
-                  <CardHeader>
-                    <span className="eyebrow">0{index + 1}</span>
-                    <CardTitle className="mt-5 text-2xl">{college.examName}</CardTitle>
-                    <CardDescription>{college.name}</CardDescription>
+                <Card
+                  className="studio-card flex h-full flex-col animate-enter-up"
+                  style={{ animationDelay: `${index * 80}ms` }}
+                >
+                  <CardHeader className="pb-1">
+                    <div className="flex items-start justify-between mb-6">
+                      <span className="eyebrow !tracking-normal">0{index + 1}</span>
+                      <Image
+                        src={college.logo}
+                        alt={`${college.name} seal`}
+                        width={72}
+                        height={72}
+                        className="h-18 w-18 object-contain -mt-2"
+                      />
+                    </div>
+                    <CardTitle className="text-2xl pr-16 -mt-10">{college.examName}</CardTitle>
+                    <CardDescription className="pr-16 min-h-[2.5rem]">{college.name}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex items-center justify-between text-sm">
+                  <div className="border-t border-foreground/15 mx-6" />
+                  <div className="flex flex-wrap gap-2 px-6 pt-2.5">
+                    {college.subjects.map((subject) => (
+                      <span
+                        key={subject.slug}
+                        className="rounded-full border border-foreground/15 bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                      >
+                        {subject.name}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-auto flex items-center justify-between px-6 pb-5 pt-3 text-sm">
                     <span className="text-muted-foreground">{college.subjects.length} sections</span>
                     <span className="inline-flex items-center gap-1 font-medium text-primary">
                       Open <ArrowRight className="h-3.5 w-3.5" />
                     </span>
-                  </CardContent>
+                  </div>
                 </Card>
               </Link>
             ))}

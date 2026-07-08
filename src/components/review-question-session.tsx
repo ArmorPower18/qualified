@@ -7,11 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { QuestionCard } from "@/components/question-card";
-import type { ReviewQuestion, Difficulty, ReviewMode, Question } from "@/lib/types";
+import type { ReviewQuestion, Difficulty, ReviewMode, Question, QuestionAttemptSource } from "@/lib/types";
+
+const modeToAttemptSource: Record<"general" | "exam_focus", QuestionAttemptSource> = {
+  general: "general_review",
+  exam_focus: "exam_focus_review",
+};
 
 export function ReviewQuestionSession({
   questions,
   lessonIds,
+  lessonSubjectNames,
   difficulty,
   mode,
   collegeId,
@@ -19,6 +25,7 @@ export function ReviewQuestionSession({
 }: {
   questions: ReviewQuestion[];
   lessonIds: string[];
+  lessonSubjectNames: Record<string, string>;
   difficulty: Difficulty | null;
   mode: ReviewMode;
   collegeId: string | null;
@@ -28,6 +35,7 @@ export function ReviewQuestionSession({
   const supabase = createClient();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sessionStart] = useState(() => Date.now());
 
   // QuestionCard expects the shared `Question` shape — review questions carry the
   // same fields, just keyed to a lesson instead of a CET subject.
@@ -55,6 +63,7 @@ export function ReviewQuestionSession({
       setSaving(false);
       return;
     }
+    const durationSeconds = Math.round((Date.now() - sessionStart) / 1000);
     await supabase.from("review_attempts").insert({
       user_id: userData.user.id,
       mode,
@@ -63,16 +72,25 @@ export function ReviewQuestionSession({
       difficulty,
       question_count: questions.length,
       total_questions: questions.length,
+      duration_seconds: durationSeconds,
       completed_at: new Date().toISOString(),
     });
     setSaving(false);
     setSaved(true);
   }
 
+  const attemptSource = mode === "flashcard" ? undefined : modeToAttemptSource[mode];
+
   return (
     <div className="flex flex-col gap-6">
       {asQuestions.map((q, i) => (
-        <QuestionCard key={q.id} question={q} index={i} />
+        <QuestionCard
+          key={q.id}
+          question={q}
+          index={i}
+          subjectLabel={lessonSubjectNames[questions[i].lesson_id] ?? "General"}
+          attemptSource={attemptSource}
+        />
       ))}
 
       <Card className="studio-card">

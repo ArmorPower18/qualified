@@ -22,6 +22,7 @@ export async function getCustomCollege(collegeSlug: string): Promise<StaticColle
       examName: data.exam_name,
       description: data.description ?? "",
       subjects: [],
+      logo: "",
     };
   } catch {
     return null;

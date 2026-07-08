@@ -835,24 +835,24 @@ select mo.id, l.slug, l.name, l.sort_order, l.priority_notes
 from modules mo join subject_areas sa on sa.id = mo.subject_area_id, (values
   ('congruent-and-similar-triangles', 'Congruent and Similar Triangles', 0, null),
   ('measurements-of-geometric-segments', 'Measurements of Geometric Segments', 1, null),
-  ('circles-ii-measure-of-segments', 'Circles II - Measure of Segments', 2, null),
+  ('circles-i-measure-of-angles', 'Circles I - Measure of Angles', 2, null),
   ('measurements-of-geometric-angles', 'Measurements of Geometric Angles', 3, null),
   ('mensuration', 'Mensuration', 4, null),
-  ('circles-i-measure-of-angles', 'Circles I - Measure of Angles', 5, null)
+  ('circles-ii-measure-of-segments', 'Circles II - Measure of Segments', 5, null)
 ) as l(slug, name, sort_order, priority_notes)
 where sa.scope = 'general' and sa.slug = 'mathematics' and mo.slug = 'geometry';
 
 insert into lessons (module_id, slug, name, sort_order, priority_notes)
 select mo.id, l.slug, l.name, l.sort_order, l.priority_notes
 from modules mo join subject_areas sa on sa.id = mo.subject_area_id, (values
-  ('motion-problems-ii', 'Motion Problems II', 0, null),
-  ('motion-problems-i', 'Motion Problems I', 1, null),
+  ('motion-problems-i', 'Motion Problems I', 0, null),
+  ('motion-problems-ii', 'Motion Problems II', 1, null),
   ('number-problems', 'Number Problems', 2, null),
-  ('business-math-problems-ii', 'Business Math Problems II', 3, null),
+  ('business-math-problems-i', 'Business Math Problems I', 3, null),
   ('age-problems', 'Age Problems', 4, null),
   ('work-problems', 'Work Problems', 5, null),
   ('mixture-and-solution-problems', 'Mixture and Solution Problems', 6, null),
-  ('business-math-problems-i', 'Business Math Problems I', 7, null)
+  ('business-math-problems-ii', 'Business Math Problems II', 7, null)
 ) as l(slug, name, sort_order, priority_notes)
 where sa.scope = 'general' and sa.slug = 'mathematics' and mo.slug = 'word-problems';
 

@@ -29,34 +29,31 @@ const panels = [
 export default function ReviewHubPage() {
   return (
     <div className="editorial-shell py-14">
-      <div className="grid gap-8 border-b border-foreground/15 pb-8 md:grid-cols-[0.7fr_1fr]">
+      <div className="mb-8 border-b border-foreground/15 pb-6">
         <p className="eyebrow">Review modes</p>
-        <div>
-          <h1 className="text-4xl font-semibold leading-tight md:text-6xl">Review</h1>
-          <p className="mt-4 max-w-2xl text-muted-foreground">
-            Three ways to study, all built around the same lesson library. Pick what fits how you
-            want to prepare today.
-          </p>
-        </div>
+        <h1 className="mt-2 text-4xl font-semibold leading-tight">Review</h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Three ways to study, all built around the same lesson library.
+        </p>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {panels.map((panel, index) => (
           <Link key={panel.href} href={panel.href}>
             <Card
-              className="studio-card h-full animate-enter-up"
+              className="studio-card h-full flex flex-col animate-enter-up"
               style={{ animationDelay: `${index * 90}ms` }}
             >
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-6">
                   <span className="eyebrow">0{index + 1}</span>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-foreground text-background">
-                    <panel.icon className="h-4 w-4" />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background">
+                    <panel.icon className="h-4.5 w-4.5" />
                   </span>
                 </div>
-                <CardTitle className="mt-8 text-xl">{panel.title}</CardTitle>
-                <CardDescription className="leading-relaxed">{panel.description}</CardDescription>
-                <span className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                <CardTitle className="text-xl">{panel.title}</CardTitle>
+                <CardDescription className="mt-2 leading-relaxed min-h-[3rem]">{panel.description}</CardDescription>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
                   Get started <ArrowRight className="h-3.5 w-3.5" />
                 </span>
               </CardHeader>

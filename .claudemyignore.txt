@@ -1,0 +1,11 @@
+# Blacklist Kiro System Architecture
+.kiro/
+.kiro-agent/
+specs/
+hooks/
+
+# Deep Dependencies & System Output
+node_modules/
+.git/
+build/
+dist/

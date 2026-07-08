@@ -26,6 +26,7 @@ export function FlashcardSession({
   const [stillLearning, setStillLearning] = useState(0);
   const [done, setDone] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sessionStart] = useState(() => Date.now());
 
   const card = cards[index];
 
@@ -33,6 +34,7 @@ export function FlashcardSession({
     setDone(true);
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
+    const durationSeconds = Math.round((Date.now() - sessionStart) / 1000);
     await supabase.from("review_attempts").insert({
       user_id: userData.user.id,
       mode: "flashcard",
@@ -41,6 +43,7 @@ export function FlashcardSession({
       question_count: cards.length,
       score: finalKnewIt,
       total_questions: finalKnewIt + finalStillLearning,
+      duration_seconds: durationSeconds,
       completed_at: new Date().toISOString(),
     });
     setSaved(true);

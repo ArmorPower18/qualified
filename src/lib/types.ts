@@ -138,6 +138,20 @@ export type ReviewAttempt = {
   question_count: number;
   score: number | null;
   total_questions: number | null;
+  duration_seconds: number | null;
   started_at: string;
   completed_at: string | null;
+};
+
+// Subject mastery: per-question correctness tagged with a denormalized subject label,
+// rolled up on the dashboard. Flashcards are intentionally excluded (self-reported, not graded).
+export type QuestionAttemptSource = "practice" | "general_review" | "exam_focus_review";
+
+export type QuestionAttempt = {
+  id: string;
+  user_id: string;
+  source: QuestionAttemptSource;
+  subject_label: string;
+  is_correct: boolean;
+  answered_at: string;
 };

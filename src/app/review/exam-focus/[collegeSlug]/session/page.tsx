@@ -4,7 +4,7 @@ import { Target } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { getStaticCollege } from "@/lib/colleges-static";
-import { getReviewQuestions } from "@/lib/review-data";
+import { getReviewQuestions, getLessonSubjectNames } from "@/lib/review-data";
 import { createClient } from "@/lib/supabase/server";
 import { ReviewQuestionSession } from "@/components/review-question-session";
 import type { Difficulty } from "@/lib/types";
@@ -26,6 +26,7 @@ export default async function ExamFocusSessionPage({
   const count = Number(sp.count) || 10;
 
   const questions = await getReviewQuestions(lessonIds, difficulty, count);
+  const lessonSubjectNames = await getLessonSubjectNames(lessonIds);
 
   let collegeId: string | null = null;
   try {
@@ -62,6 +63,7 @@ export default async function ExamFocusSessionPage({
       <ReviewQuestionSession
         questions={questions}
         lessonIds={lessonIds}
+        lessonSubjectNames={lessonSubjectNames}
         difficulty={difficulty}
         mode="exam_focus"
         collegeId={collegeId}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { getReviewQuestions } from "@/lib/review-data";
+import { getReviewQuestions, getLessonSubjectNames } from "@/lib/review-data";
 import { ReviewQuestionSession } from "@/components/review-question-session";
 import type { Difficulty } from "@/lib/types";
 
@@ -17,6 +17,7 @@ export default async function GeneralReviewSessionPage({
   const count = Number(params.count) || 10;
 
   const questions = await getReviewQuestions(lessonIds, difficulty, count);
+  const lessonSubjectNames = await getLessonSubjectNames(lessonIds);
 
   if (questions.length === 0) {
     return (
@@ -44,6 +45,7 @@ export default async function GeneralReviewSessionPage({
       <ReviewQuestionSession
         questions={questions}
         lessonIds={lessonIds}
+        lessonSubjectNames={lessonSubjectNames}
         difficulty={difficulty}
         mode="general"
         collegeId={null}

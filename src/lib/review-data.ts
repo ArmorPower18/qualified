@@ -73,3 +73,36 @@ export async function getReviewQuestions(
     return [];
   }
 }
+
+// Maps each lesson id to its parent subject_area name (e.g. "Mathematics"), so review
+// sessions can tag question attempts with a subject label for mastery tracking.
+export async function getLessonSubjectNames(lessonIds: string[]): Promise<Record<string, string>> {
+  if (lessonIds.length === 0) return {};
+  try {
+    const supabase = await createClient();
+    const { data: lessons } = await supabase.from("lessons").select("id, module_id").in("id", lessonIds);
+    if (!lessons || lessons.length === 0) return {};
+
+    const moduleIds = [...new Set(lessons.map((l) => l.module_id))];
+    const { data: modules } = await supabase
+      .from("modules")
+      .select("id, subject_area_id")
+      .in("id", moduleIds);
+    if (!modules) return {};
+
+    const subjectAreaIds = [...new Set(modules.map((m) => m.subject_area_id))];
+    const { data: subjectAreas } = await supabase.from("subject_areas").select("id, name").in("id", subjectAreaIds);
+    if (!subjectAreas) return {};
+
+    const moduleToSubjectName = new Map(
+      modules.map((m) => [m.id, subjectAreas.find((s) => s.id === m.subject_area_id)?.name ?? "General"])
+    );
+    const lessonToSubjectName: Record<string, string> = {};
+    for (const lesson of lessons) {
+      lessonToSubjectName[lesson.id] = moduleToSubjectName.get(lesson.module_id) ?? "General";
+    }
+    return lessonToSubjectName;
+  } catch {
+    return {};
+  }
+}

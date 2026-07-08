@@ -9,6 +9,8 @@ export type StaticCollege = {
   examName: string;
   description: string;
   subjects: StaticSubject[];
+  // Official crest, provided by the site owner (public/logos/*.png).
+  logo: string;
 };
 
 export const STATIC_COLLEGES: StaticCollege[] = [
@@ -17,6 +19,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     name: "University of the Philippines",
     examName: "UPCAT",
     description: "UP College Admission Test",
+    logo: "/logos/up.png",
     subjects: [
       { slug: "reading-comprehension", name: "Reading Comprehension", description: "English and Filipino reading passages with inference questions" },
       { slug: "language-proficiency", name: "Language Proficiency", description: "Grammar, vocabulary, and sentence construction" },
@@ -29,6 +32,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     name: "Ateneo de Manila University",
     examName: "ACET",
     description: "Ateneo College Entrance Test",
+    logo: "/logos/admu.png",
     subjects: [
       { slug: "verbal-ability", name: "Verbal Ability", description: "Vocabulary, analogies, and reading comprehension" },
       { slug: "mathematical-ability", name: "Mathematical Ability", description: "Algebra, geometry, and quantitative reasoning" },
@@ -41,6 +45,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     name: "De La Salle University",
     examName: "DCAT",
     description: "DLSU College Admission Test",
+    logo: "/logos/dlsu.png",
     subjects: [
       { slug: "reading-comprehension", name: "Reading Comprehension", description: "English passages and critical reading" },
       { slug: "verbal-reasoning", name: "Verbal Reasoning", description: "Vocabulary, analogies, and logic" },
@@ -53,6 +58,7 @@ export const STATIC_COLLEGES: StaticCollege[] = [
     name: "University of Santo Tomas",
     examName: "USTET",
     description: "UST Entrance Test",
+    logo: "/logos/ust.png",
     subjects: [
       { slug: "language-proficiency", name: "Language Proficiency", description: "English and Filipino grammar and comprehension" },
       { slug: "mathematics", name: "Mathematics", description: "Arithmetic, algebra, and geometry" },

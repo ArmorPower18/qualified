@@ -10,6 +10,7 @@ const nav = [
   { href: "/mock-test", label: "Mock Tests" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/custom", label: "Other CET" },
+  { href: "/pricing", label: "Pricing" },
 ];
 
 export async function SiteHeader() {

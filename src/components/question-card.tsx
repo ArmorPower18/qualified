@@ -5,13 +5,40 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Question } from "@/lib/types";
+import type { Question, QuestionAttemptSource } from "@/lib/types";
 import { CommentThread } from "@/components/comment-thread";
+import { createClient } from "@/lib/supabase/client";
 
-export function QuestionCard({ question, index }: { question: Question; index: number }) {
+export function QuestionCard({
+  question,
+  index,
+  subjectLabel,
+  attemptSource,
+}: {
+  question: Question;
+  index: number;
+  // When provided, answering logs a question_attempts row for subject mastery tracking.
+  // Omitted for sample/fallback questions (no real DB row to attribute the attempt to).
+  subjectLabel?: string;
+  attemptSource?: QuestionAttemptSource;
+}) {
   const [selected, setSelected] = useState<string | null>(null);
 
   const isCorrect = selected === question.correct_answer;
+
+  async function handleSelect(key: string) {
+    setSelected(key);
+    if (!subjectLabel || !attemptSource || question.id.startsWith("sample-")) return;
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+    await supabase.from("question_attempts").insert({
+      user_id: userData.user.id,
+      source: attemptSource,
+      subject_label: subjectLabel,
+      is_correct: key === question.correct_answer,
+    });
+  }
 
   return (
     <Card className="studio-card">
@@ -34,7 +61,7 @@ export function QuestionCard({ question, index }: { question: Question; index: n
               <button
                 key={choice.key}
                 type="button"
-                onClick={() => setSelected(choice.key)}
+                onClick={() => handleSelect(choice.key)}
                 disabled={selected !== null}
                 className={cn(
                   "flex items-center justify-between rounded-md border px-4 py-2.5 text-left text-sm transition-colors",

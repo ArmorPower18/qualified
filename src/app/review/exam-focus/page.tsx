@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { STATIC_COLLEGES } from "@/lib/colleges-static";
@@ -22,7 +23,16 @@ export default function ExamFocusReviewPage() {
               style={{ animationDelay: `${index * 80}ms` }}
             >
               <CardHeader>
-                <span className="eyebrow">0{index + 1}</span>
+                <div className="flex items-center justify-between">
+                  <span className="eyebrow !tracking-normal">0{index + 1}</span>
+                  <Image
+                    src={college.logo}
+                    alt={`${college.name} seal`}
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 object-contain"
+                  />
+                </div>
                 <CardTitle className="mt-5 text-2xl">{college.examName}</CardTitle>
                 <CardDescription>{college.name}</CardDescription>
               </CardHeader>

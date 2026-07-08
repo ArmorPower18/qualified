@@ -4,13 +4,22 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { MasteryChart } from "@/components/mastery-chart";
-import type { MockTestAttempt, ReviewAttempt } from "@/lib/types";
+import { Progress } from "@/components/ui/progress";
+import type { MockTestAttempt, ReviewAttempt, QuestionAttempt } from "@/lib/types";
 
 const modeLabels: Record<ReviewAttempt["mode"], string> = {
   flashcard: "Flashcards",
   general: "General Review",
   exam_focus: "Exam Focus Review",
 };
+
+function formatDuration(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.round((totalSeconds % 3600) / 60);
+  if (hours === 0 && minutes === 0) return "< 1m";
+  if (hours === 0) return `${minutes}m`;
+  return `${hours}h ${minutes}m`;
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,6 +46,33 @@ export default async function DashboardPage() {
 
   const typedReviewAttempts = (reviewAttempts as ReviewAttempt[]) ?? [];
 
+  const totalStudySeconds = typedReviewAttempts.reduce((sum, a) => sum + (a.duration_seconds ?? 0), 0);
+
+  // Subject mastery: accuracy per subject from practice + review questions only.
+  // Flashcards never write to question_attempts (self-reported, not graded), so they're
+  // excluded automatically.
+  const { data: questionAttempts } = await supabase
+    .from("question_attempts")
+    .select("*")
+    .eq("user_id", user.id);
+
+  const typedQuestionAttempts = (questionAttempts as QuestionAttempt[]) ?? [];
+  const masteryBySubject = new Map<string, { correct: number; total: number }>();
+  for (const a of typedQuestionAttempts) {
+    const bucket = masteryBySubject.get(a.subject_label) ?? { correct: 0, total: 0 };
+    bucket.total += 1;
+    if (a.is_correct) bucket.correct += 1;
+    masteryBySubject.set(a.subject_label, bucket);
+  }
+  const subjectMastery = Array.from(masteryBySubject.entries())
+    .map(([subject, { correct, total }]) => ({
+      subject,
+      correct,
+      total,
+      pct: Math.round((correct / total) * 100),
+    }))
+    .sort((a, b) => b.total - a.total);
+
   return (
     <div className="editorial-shell max-w-4xl py-10">
       <div className="border-b border-foreground/15 pb-6">
@@ -45,6 +81,52 @@ export default async function DashboardPage() {
         <p className="mt-3 max-w-2xl text-muted-foreground">
           Track your mock test performance over time and spot where to focus next.
         </p>
+      </div>
+
+      <div className="mt-6 grid gap-5 md:grid-cols-[1.3fr_0.7fr]">
+        <Card className="studio-card">
+          <CardHeader>
+            <CardTitle>Subject mastery</CardTitle>
+            <CardDescription>
+              Accuracy from practice questions and review sessions (Flashcards don&apos;t count —
+              they&apos;re self-graded, not scored).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {subjectMastery.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Answer some practice or review questions to see your accuracy by subject here.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {subjectMastery.map((s) => (
+                  <div key={s.subject}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{s.subject}</span>
+                      <span className="text-muted-foreground">
+                        {s.correct}/{s.total} ({s.pct}%)
+                      </span>
+                    </div>
+                    <Progress value={s.pct} className="mt-1.5" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="studio-card">
+          <CardHeader>
+            <CardTitle>Time studied</CardTitle>
+            <CardDescription>Across all review sessions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-semibold text-primary">{formatDuration(totalStudySeconds)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {typedReviewAttempts.length} session{typedReviewAttempts.length === 1 ? "" : "s"} completed
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {typedAttempts.length === 0 ? (
@@ -109,8 +191,8 @@ export default async function DashboardPage() {
             {typedReviewAttempts.length === 0 ? (
               <div className="flex flex-col items-start gap-3">
                 <p className="text-sm text-muted-foreground">
-                  No review sessions yet — flashcards and topic review count toward your mastery
-                  tracking too.
+                  No review sessions yet — General Review and Exam Focus Review count toward your
+                  subject mastery above; flashcard time is tracked here too.
                 </p>
                 <Link href="/review" className={buttonVariants({ variant: "outline", className: "rounded-md" })}>
                   Go to Review
