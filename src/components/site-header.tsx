@@ -5,10 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/user-menu";
 
 const baseNav = [
-  { href: "/colleges", label: "Colleges" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/review", label: "Review" },
   { href: "/mock-test", label: "Mock Tests" },
-  { href: "/dashboard", label: "Dashboard" },
   { href: "/custom", label: "Other CET" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -62,7 +61,7 @@ export async function SiteHeader() {
             </>
           )}
           <Link
-            href="/colleges"
+            href="/dashboard"
             aria-label="Open navigation"
             className={buttonVariants({ variant: "outline", size: "icon", className: "md:hidden" })}
           >
