@@ -74,9 +74,9 @@ export async function POST(request: NextRequest) {
       : null;
     const weekCount = Math.min(6, Math.max(2, daysRemaining ? Math.round(daysRemaining / 7) : 4));
 
-    if (!process.env.QUIICK_AGENT_URL) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "AI processing is not configured. Please add QUIICK_AGENT_URL to .env.local" },
+        { error: "AI processing is not configured. Please add GEMINI_API_KEY to .env.local" },
         { status: 500 }
       );
     }
@@ -112,34 +112,40 @@ Build a ${weekCount}-week study plan that prioritizes the weakest subjects early
   ]
 }`;
 
-    const agentResponse = await fetch(process.env.QUIICK_AGENT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(process.env.QUIICK_API_KEY && { Authorization: `Bearer ${process.env.QUIICK_API_KEY}` }),
-      },
-      body: JSON.stringify({ message }),
-    });
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": process.env.GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: message }] }],
+          generationConfig: { responseMimeType: "application/json" },
+        }),
+      }
+    );
 
-    if (!agentResponse.ok) {
-      const errorText = await agentResponse.text();
-      console.error("Quiick agent error:", errorText);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error("Gemini API error:", errorText);
       return NextResponse.json({ error: "Failed to generate a study plan with the AI agent" }, { status: 500 });
     }
 
-    const agentResult = await agentResponse.json();
+    const geminiResult = await geminiResponse.json();
+    const text: string | undefined = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      console.error("Unexpected Gemini response shape:", geminiResult);
+      return NextResponse.json({ error: "AI agent returned an unexpected format" }, { status: 500 });
+    }
+
     let parsed: { summary?: string; weeks?: StudyPlanWeek[] };
     try {
-      if (agentResult.response) {
-        const jsonMatch =
-          agentResult.response.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/) || agentResult.response.match(/\{[\s\S]*\}/);
-        const jsonText = jsonMatch ? jsonMatch[1] || jsonMatch[0] : agentResult.response;
-        parsed = JSON.parse(jsonText.trim());
-      } else {
-        parsed = agentResult;
-      }
+      parsed = JSON.parse(text);
     } catch (e) {
-      console.error("Failed to parse study plan JSON:", e, agentResult);
+      console.error("Failed to parse study plan JSON:", e, text);
       return NextResponse.json({ error: "AI agent returned an unexpected format" }, { status: 500 });
     }
 
