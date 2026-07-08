@@ -9,9 +9,13 @@ import type { CollegeColor } from "@/lib/colleges-static";
 
 export function DashboardTestDate({
   initialDate,
+  collegeId,
   accent,
 }: {
   initialDate: string | null;
+  // Which exam this date belongs to — each college gets its own row so
+  // setting one exam's date doesn't overwrite another's.
+  collegeId: string | null;
   accent: CollegeColor;
 }) {
   const router = useRouter();
@@ -21,11 +25,16 @@ export function DashboardTestDate({
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    if (!value) return;
+    if (!value || !collegeId) return;
     setSaving(true);
     const { data } = await supabase.auth.getUser();
     if (data.user) {
-      await supabase.from("profiles").upsert({ id: data.user.id, test_date: value });
+      await supabase
+        .from("exam_test_dates")
+        .upsert(
+          { user_id: data.user.id, college_id: collegeId, test_date: value, updated_at: new Date().toISOString() },
+          { onConflict: "user_id,college_id" }
+        );
     }
     setSaving(false);
     setEditing(false);
@@ -50,7 +59,7 @@ export function DashboardTestDate({
         <Button
           size="sm"
           onClick={save}
-          disabled={saving || !value}
+          disabled={saving || !value || !collegeId}
           className="border-transparent"
           style={{ backgroundColor: accent.fg, color: accent.bg }}
         >

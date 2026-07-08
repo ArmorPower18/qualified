@@ -67,8 +67,13 @@ export async function POST(request: NextRequest) {
       })
       .sort((a, b) => a.pct - b.pct);
 
-    const { data: profile } = await supabase.from("profiles").select("test_date").eq("id", user.id).maybeSingle();
-    const testDate = profile?.test_date ? new Date(`${profile.test_date}T00:00:00`) : null;
+    const { data: examTestDate } = await supabase
+      .from("exam_test_dates")
+      .select("test_date")
+      .eq("user_id", user.id)
+      .eq("college_id", college.id)
+      .maybeSingle();
+    const testDate = examTestDate?.test_date ? new Date(`${examTestDate.test_date}T00:00:00`) : null;
     const daysRemaining = testDate
       ? Math.max(0, Math.ceil((testDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
       : null;

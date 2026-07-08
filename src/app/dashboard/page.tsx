@@ -92,7 +92,7 @@ export default async function DashboardPage({
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: onboarding }, { data: collegeRows }] = await Promise.all([
-    supabase.from("profiles").select("target_college_id, test_date").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("target_college_id").eq("id", user.id).maybeSingle(),
     supabase.from("onboarding_responses").select("target_exams").eq("user_id", user.id).maybeSingle(),
     supabase.from("colleges").select("id, slug").eq("is_custom", false),
   ]);
@@ -112,6 +112,17 @@ export default async function DashboardPage({
 
   const selectedCollege = getStaticCollege(selectedSlug) ?? STATIC_COLLEGES[0];
   const selectedCollegeId = slugToId.get(selectedSlug) ?? null;
+
+  // Test date is per-exam, not per-user — each college gets its own row so
+  // setting UPCAT's date doesn't overwrite ACET's.
+  const { data: examTestDate } = selectedCollegeId
+    ? await supabase
+        .from("exam_test_dates")
+        .select("test_date")
+        .eq("user_id", user.id)
+        .eq("college_id", selectedCollegeId)
+        .maybeSingle()
+    : { data: null };
 
   const { data: attempts } = await supabase
     .from("mock_test_attempts")
@@ -191,9 +202,9 @@ export default async function DashboardPage({
     .sort((a, b) => a.pct - b.pct)
     .slice(0, 2);
 
-  // Countdown to the student's test date. Stored on their profile (editable inline);
-  // there's no fabricated default — an empty state prompts them to set one.
-  const testDate = profile?.test_date ? new Date(`${profile.test_date}T00:00:00`) : null;
+  // Countdown to this exam's test date (editable inline, one per college); no
+  // fabricated default — an empty state prompts them to set one.
+  const testDate = examTestDate?.test_date ? new Date(`${examTestDate.test_date}T00:00:00`) : null;
   // Server Components render fresh per request rather than being memoized, so reading
   // the current time here doesn't create the staleness the purity rule guards against.
   // eslint-disable-next-line react-hooks/purity
@@ -304,7 +315,11 @@ export default async function DashboardPage({
                 : "Not set yet"}
             </p>
             <div className="mt-4">
-              <DashboardTestDate initialDate={profile?.test_date ?? null} accent={selectedCollege.color} />
+              <DashboardTestDate
+                initialDate={examTestDate?.test_date ?? null}
+                collegeId={selectedCollegeId}
+                accent={selectedCollege.color}
+              />
             </div>
           </div>
           {daysRemaining !== null && daysRemaining >= 0 && (
