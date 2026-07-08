@@ -1,23 +1,30 @@
 -- Mock test seed for DLSU / DCAT.
--- Public sources describe the DCAT as a multiple-choice exam lasting roughly 2 to 3 hours total,
--- covering aptitude/verbal-logical reasoning, quantitative reasoning (math), reading comprehension
--- (including data analysis), and science, plus a values/situational component. Exact current
--- per-section item counts and minute allocations are not published by DLSU, so the section_config
--- below is a reasonable representative approximation (not an official DLSU document) built from the
--- ~2.5 hour total duration and typical CET section sizes. Review and adjust against official DCAT
--- guidelines before treating this as exam-accurate.
+-- Section data from official/documented source:
+--   1. Mental Ability:              40 min,  23/40 questions  → mapped to verbal-reasoning
+--   2. Writing Skills & Language:   30 min,  24/40 questions  → mapped to reading-comprehension
+--   3. Mathematics Proficiency:     50 min,  27/45 questions  → mapped to quantitative-reasoning
+--   4. Science Proficiency:         50 min,  30/50 questions  → mapped to science
+--   5. Reading Comprehension:       30 min,  22/30 questions  → mapped to reading-comprehension (combined)
+--   6. Statistics & Probability:    40 min,  26/45 questions  → mapped to quantitative-reasoning (combined)
+--   TOTAL:                         240 min, 152/250 questions
 --
--- NOTE: "subject_id" is intentionally left null in each section below because subject UUIDs are not
--- known at seed time. After running this seed, manually update mock_tests.section_config to set each
--- subject_id to the matching row in `subjects` (join on slug: reading-comprehension, verbal-reasoning,
--- quantitative-reasoning, science) for college slug 'dlsu'.
+-- The DCAT has 6 sub-sections but this app models it with 4 subject slugs.
+-- Sections 2 and 5 (language/reading) are consolidated into reading-comprehension.
+-- Sections 1 (mental ability/logic) maps to verbal-reasoning.
+-- Sections 3 and 6 (math + stats) are consolidated into quantitative-reasoning.
+-- question_count uses the max (denominator) from the official table.
+--
+-- NOTE: "subject_id" is intentionally left null — update after seeding via:
+--   select id, slug from subjects s join colleges c on c.id = s.college_id where c.slug = 'dlsu';
 
 insert into mock_tests (college_id, name, time_limit_minutes, section_config)
-select id, 'DCAT Full Mock Test', 150,
+select id, 'DCAT Full Mock Test', 240,
   '[
-    {"subject_id": null, "name": "Reading Comprehension", "minutes": 35, "question_count": 30},
-    {"subject_id": null, "name": "Verbal Reasoning", "minutes": 40, "question_count": 40},
-    {"subject_id": null, "name": "Quantitative Reasoning", "minutes": 45, "question_count": 35},
-    {"subject_id": null, "name": "Science", "minutes": 30, "question_count": 30}
+    {"subject_id": null, "name": "Mental Ability",               "minutes": 40, "question_count": 40},
+    {"subject_id": null, "name": "Writing Skills & Language",    "minutes": 30, "question_count": 40},
+    {"subject_id": null, "name": "Mathematics Proficiency",      "minutes": 50, "question_count": 45},
+    {"subject_id": null, "name": "Science Proficiency",          "minutes": 50, "question_count": 50},
+    {"subject_id": null, "name": "Reading Comprehension",        "minutes": 30, "question_count": 30},
+    {"subject_id": null, "name": "Statistics & Probability",     "minutes": 40, "question_count": 45}
   ]'::jsonb
 from colleges where slug = 'dlsu';

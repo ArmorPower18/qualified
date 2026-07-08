@@ -1,11 +1,11 @@
--- Mock test config for UPCAT, based on publicly reported UPCAT subtest timings/item counts:
---   Reading Comprehension: 30 items / 30 minutes
---   Language Proficiency:  40 items / 30 minutes
---   Mathematics:           60 items / 75 minutes
---   Science:               60 items / 50 minutes
---   Total: 190 items / 185 minutes of actual testing time
---   (Actual on-site UPCAT day runs ~4-5 hours including registration, orientation,
---    and breaks between subtests; the time_limit_minutes below reflects testing time only.)
+-- Mock test config for UPCAT.
+-- Section data from official/documented source:
+--   1. Language Proficiency:   45 min,  46/80 questions
+--   2. Science Proficiency:    40 min,  29/45 questions
+--   3. Mathematics Proficiency:55 min,  21/45 questions
+--   4. Reading Comprehension:  60 min,  48/80 questions
+--   TOTAL:                    200 min, 144/250 questions
+-- question_count below uses the max (denominator) from the official table.
 --
 -- LIMITATION: "subject_id" in section_config is left null because subject UUIDs are
 -- generated at insert time and unknown here. After seeding subjects (0001) and running
@@ -14,11 +14,11 @@
 -- and then patching the jsonb array entries accordingly.
 
 insert into mock_tests (college_id, name, time_limit_minutes, section_config)
-select id, 'UPCAT Full Mock Test', 185,
+select id, 'UPCAT Full Mock Test', 200,
   '[
-    {"subject_id": null, "name": "Reading Comprehension", "minutes": 30, "question_count": 30},
-    {"subject_id": null, "name": "Language Proficiency", "minutes": 30, "question_count": 40},
-    {"subject_id": null, "name": "Mathematics", "minutes": 75, "question_count": 60},
-    {"subject_id": null, "name": "Science", "minutes": 50, "question_count": 60}
+    {"subject_id": null, "name": "Language Proficiency",    "minutes": 45, "question_count": 80},
+    {"subject_id": null, "name": "Science Proficiency",     "minutes": 40, "question_count": 45},
+    {"subject_id": null, "name": "Mathematics Proficiency", "minutes": 55, "question_count": 45},
+    {"subject_id": null, "name": "Reading Comprehension",   "minutes": 60, "question_count": 80}
   ]'::jsonb
 from colleges where slug = 'up';

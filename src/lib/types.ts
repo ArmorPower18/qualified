@@ -143,6 +143,25 @@ export type ReviewAttempt = {
   completed_at: string | null;
 };
 
+// Onboarding survey: personalization answers captured after first login.
+export type MasteryLevel = "beginner" | "intermediate" | "advanced";
+export type ExplanationStyle = "step-by-step" | "concise" | "visual" | "examples" | "others";
+export type TargetExam = "UPCAT" | "ACET" | "DCAT" | "USTET";
+
+export type OnboardingResponse = {
+  id: string;
+  user_id: string;
+  target_exams: TargetExam[];
+  study_time: string | null;
+  mastery_level: MasteryLevel | null;
+  explanation_styles: ExplanationStyle[];
+  explanation_other: string | null;
+  priority_subjects: string | null;
+  goals: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // Subject mastery: per-question correctness tagged with a denormalized subject label,
 // rolled up on the dashboard. Flashcards are intentionally excluded (self-reported, not graded).
 export type QuestionAttemptSource = "practice" | "general_review" | "exam_focus_review";

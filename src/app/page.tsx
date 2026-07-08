@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { ArrowRight, Layers, LineChart, Timer } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { STATIC_COLLEGES } from "@/lib/colleges-static";
+import { createClient } from "@/lib/supabase/server";
 
 const pillars = [
   {
@@ -31,7 +33,15 @@ const pillars = [
 
 const tickerItems = ["UPCAT", "ACET", "DCAT", "USTET", "MOCK TESTS", "FLASHCARDS", "FREE REVIEW"];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const user = await supabase.auth
+    .getUser()
+    .then(({ data }) => data.user)
+    .catch(() => null);
+
+  if (user) redirect("/dashboard");
+
   return (
     <div className="overflow-hidden">
       <section className="border-b border-foreground/15">

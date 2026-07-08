@@ -11,8 +11,8 @@ const highlights = [
   },
   {
     icon: Timer,
-    title: "Unlimited mocks on Pro",
-    description: "Train under timed conditions as often as you need, with full per-question review after every attempt.",
+    title: "Scheduled mock tests",
+    description: "Pro gets a fresh full-length mock test every two weeks. Unlimited gets one every week — timed, reviewed, and tracked.",
   },
   {
     icon: Target,
@@ -31,7 +31,7 @@ const freeFeatures = [
 ];
 
 const freeLocked = [
-  "Unlimited mock tests",
+  "Mock test every 2 weeks",
   "AI study tutor & explanations",
   "AI-personalized reviewer",
   "Custom study pack generation",
@@ -39,7 +39,7 @@ const freeLocked = [
 
 const proFeatures = [
   "Everything in Free, ad-free",
-  "Unlimited mock tests, all 4 tracks",
+  "New full-length mock test every 2 weeks",
   "Unlimited flashcards with spaced repetition",
   "AI study tutor — explanations for every question",
   "AI-personalized reviewer from your mastery data",
@@ -49,6 +49,7 @@ const proFeatures = [
 
 const lifetimeFeatures = [
   "Everything in Pro",
+  "New full-length mock test every week",
   "Unlimited AI custom study packs",
   "Price locked forever",
   "Early access to new colleges & features",
@@ -134,7 +135,7 @@ export default function PricingPage() {
               </Badge>
             </div>
             <p className="text-lg font-semibold text-foreground">Pro</p>
-            <p className="mt-1 text-sm text-muted-foreground">All schools, unlimited prep, AI-powered.</p>
+            <p className="mt-1 text-sm text-muted-foreground">All schools, scheduled mocks, AI-powered.</p>
             <div className="mt-6 flex items-baseline gap-1">
               <span className="text-4xl font-semibold text-foreground">₱399</span>
               <span className="text-sm text-muted-foreground">/month</span>
