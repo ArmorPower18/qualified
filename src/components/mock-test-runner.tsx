@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { GenerateStudyPlanButton } from "@/components/generate-study-plan-button";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { MockTestConfig } from "@/lib/data";
@@ -68,8 +69,24 @@ export function MockTestRunner({
       answers,
       completed_at: new Date().toISOString(),
     });
+
+    // Feed subject mastery (and, for a pre-test, the AI study plan) with a
+    // per-question row — same 'practice' bucket the practice-question flow
+    // writes to, tagged with each section's name as the subject label.
+    const questionAttemptRows = config.sections.flatMap((s) =>
+      s.questions.map((q) => ({
+        user_id: userData.user!.id,
+        source: "practice" as const,
+        subject_label: s.name,
+        is_correct: answers[q.id] === q.correct_answer,
+      }))
+    );
+    if (questionAttemptRows.length > 0) {
+      await supabase.from("question_attempts").insert(questionAttemptRows);
+    }
+
     setSaved(true);
-  }, [allQuestions, answers, collegeSlug, isPretest, supabase]);
+  }, [allQuestions, answers, collegeSlug, config.sections, isPretest, supabase]);
 
   const goToNextSection = useCallback(() => {
     if (isLastSection) {
@@ -213,6 +230,11 @@ export function MockTestRunner({
           <p className="mt-2 text-xs text-muted-foreground">
             Log in to save this attempt to your mastery dashboard.
           </p>
+        )}
+        {saved && isPretest && (
+          <div className="mt-5 flex justify-center">
+            <GenerateStudyPlanButton collegeSlug={collegeSlug} />
+          </div>
         )}
         <div className="mt-6 flex justify-center gap-3">
           <Button variant="outline" onClick={() => router.push(`/colleges/${collegeSlug}`)}>

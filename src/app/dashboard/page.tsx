@@ -7,6 +7,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardList,
+  Sparkles,
   Timer,
   Trophy,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { MasteryChart } from "@/components/mastery-chart";
 import { DashboardExamTabs } from "@/components/dashboard-exam-tabs";
 import { DashboardTestDate } from "@/components/dashboard-test-date";
+import { GenerateStudyPlanButton } from "@/components/generate-study-plan-button";
 import { STATIC_COLLEGES, getStaticCollege } from "@/lib/colleges-static";
 import type { MockTestAttempt, ReviewAttempt, QuestionAttempt, TargetExam } from "@/lib/types";
 
@@ -132,6 +134,15 @@ export default async function DashboardPage({
 
   const typedReviewAttempts = (reviewAttempts as ReviewAttempt[]) ?? [];
   const totalStudySeconds = typedReviewAttempts.reduce((sum, a) => sum + (a.duration_seconds ?? 0), 0);
+
+  const { data: studyPlan } = selectedCollegeId
+    ? await supabase
+        .from("study_plans")
+        .select("id, summary, generated_at")
+        .eq("user_id", user.id)
+        .eq("college_id", selectedCollegeId)
+        .maybeSingle()
+    : { data: null };
 
   // Subject mastery: accuracy per subject from practice + review questions only.
   // Flashcards never write to question_attempts (self-reported, not graded), so they're
@@ -387,6 +398,48 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Study plan */}
+      {testsCompleted > 0 && (
+        <Card
+          className="mt-6 rounded-xl border-2 bg-card"
+          style={{ borderColor: `color-mix(in srgb, ${selectedCollege.color.bg} 30%, transparent)` }}
+        >
+          <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${selectedCollege.color.bg} 14%, transparent)`,
+                  color: selectedCollege.color.bg,
+                }}
+              >
+                <Sparkles className="h-4.5 w-4.5" />
+              </span>
+              <div>
+                <p className="font-semibold">
+                  {studyPlan ? `Your ${selectedCollege.examName} study plan` : "Build your study plan"}
+                </p>
+                <p className="mt-0.5 max-w-md text-sm text-muted-foreground">
+                  {studyPlan
+                    ? (studyPlan.summary ?? `Updated ${new Date(studyPlan.generated_at).toLocaleDateString()}.`)
+                    : "AI-built from your pre-test results and weakest subjects, paced against your test date."}
+                </p>
+              </div>
+            </div>
+            {studyPlan ? (
+              <Link
+                href={`/study-plan/${selectedCollege.slug}`}
+                className={buttonVariants({ variant: "outline", className: "shrink-0 rounded-lg" })}
+              >
+                View plan
+              </Link>
+            ) : (
+              <GenerateStudyPlanButton collegeSlug={selectedCollege.slug} accent={selectedCollege.color} />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Focus areas + milestone */}
       <div className="mt-6 grid gap-5 md:grid-cols-[1.3fr_0.7fr]">

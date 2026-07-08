@@ -176,3 +176,34 @@ export type QuestionAttempt = {
   is_correct: boolean;
   answered_at: string;
 };
+
+// AI-generated study plan: built from the student's subject mastery data and
+// (if set) days remaining until their test date. `weeks` is the AI's raw
+// structured output, validated for shape but not for content.
+export type StudyPlanActivity = {
+  kind: "review" | "practice" | "mock";
+  subject: string;
+  minutes: number;
+  title: string;
+  description: string;
+};
+
+export type StudyPlanDay = {
+  day: string;
+  activities: StudyPlanActivity[];
+};
+
+export type StudyPlanWeek = {
+  label: string;
+  focus: string;
+  days: StudyPlanDay[];
+};
+
+export type StudyPlan = {
+  id: string;
+  user_id: string;
+  college_id: string;
+  summary: string | null;
+  weeks: StudyPlanWeek[];
+  generated_at: string;
+};

@@ -4,7 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/user-menu";
 
-const nav = [
+const baseNav = [
   { href: "/colleges", label: "Colleges" },
   { href: "/review", label: "Review" },
   { href: "/mock-test", label: "Mock Tests" },
@@ -19,6 +19,11 @@ export async function SiteHeader() {
     .getUser()
     .then(({ data }) => data.user)
     .catch(() => null);
+
+  // Study plan only makes sense once signed in (it needs pre-test results to analyze).
+  const nav = user
+    ? [...baseNav.slice(0, 3), { href: "/study-plan", label: "Study Plan" }, ...baseNav.slice(3)]
+    : baseNav;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-foreground/15 bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
