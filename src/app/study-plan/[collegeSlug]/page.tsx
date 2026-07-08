@@ -7,13 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { GenerateStudyPlanButton } from "@/components/generate-study-plan-button";
-import type { StudyPlan } from "@/lib/types";
+import { flattenPlanDays, getPlanDayDate, isSameDay, resolveActivityHref } from "@/lib/study-plan";
+import type { StudyPlan, StudyPlanActivity } from "@/lib/types";
 
 const activityIcon = {
   practice: ListChecks,
   review: BookOpen,
   mock: Timer,
 } as const;
+
+const HIGHLIGHT_WINDOW_DAYS = 4; // today + the following 3 days
+
+function dayLabel(date: Date, today: Date) {
+  if (isSameDay(date, today)) return "Today";
+  const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 1) return "Tomorrow";
+  return date.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+}
 
 export default async function StudyPlanPage({
   params,
@@ -48,6 +58,43 @@ export default async function StudyPlanPage({
     : { data: null };
 
   const plan = planRow as StudyPlan | null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const flattened = plan ? flattenPlanDays(plan) : [];
+  const windowEnd = new Date(today);
+  windowEnd.setDate(windowEnd.getDate() + (HIGHLIGHT_WINDOW_DAYS - 1));
+  const upcoming = flattened.filter((d) => d.date >= today && d.date <= windowEnd);
+  const highlightedDates = new Set(upcoming.map((d) => d.date.toDateString()));
+
+  function ActivityRow({ act }: { act: StudyPlanActivity }) {
+    const Icon = activityIcon[act.kind] ?? ListChecks;
+    return (
+      <Link
+        href={resolveActivityHref(act, collegeSlug, college!.subjects)}
+        className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 transition-colors hover:border-foreground/30 hover:bg-muted/40"
+      >
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">
+              {act.title} <span className="text-xs text-muted-foreground">· {act.minutes} min</span>
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {act.subject} — {act.description}
+            </p>
+          </div>
+        </div>
+        <span
+          className={buttonVariants({ size: "sm", variant: "outline", className: "shrink-0 rounded-lg" })}
+        >
+          Start
+        </span>
+      </Link>
+    );
+  }
 
   return (
     <div className="editorial-shell max-w-4xl py-10">
@@ -109,6 +156,45 @@ export default async function StudyPlanPage({
             </CardContent>
           </Card>
 
+          {upcoming.length > 0 && (
+            <Card
+              className="rounded-xl border-2 bg-card"
+              style={{ borderColor: `color-mix(in srgb, ${college.color.bg} 40%, transparent)` }}
+            >
+              <CardHeader>
+                <CardTitle>Coming up</CardTitle>
+                <CardDescription>Today plus the next {HIGHLIGHT_WINDOW_DAYS - 1} days.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-4">
+                  {upcoming.map((d, i) => (
+                    <div key={i}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="rounded-md px-2 py-0.5 text-xs font-semibold"
+                          style={{
+                            backgroundColor: `color-mix(in srgb, ${college.color.bg} 14%, transparent)`,
+                            color: college.color.bg,
+                          }}
+                        >
+                          {dayLabel(d.date, today)}
+                        </span>
+                        <Badge variant="secondary" className="rounded-full text-xs">
+                          {d.day.activities.length} activit{d.day.activities.length === 1 ? "y" : "ies"}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2">
+                        {d.day.activities.map((act, ai) => (
+                          <ActivityRow key={ai} act={act} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {plan.weeks.map((week, wi) => (
             <Card key={wi} className="studio-card">
               <CardHeader>
@@ -127,33 +213,54 @@ export default async function StudyPlanPage({
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-3">
-                  {week.days.map((day, di) => (
-                    <div key={di} className="rounded-lg border border-border p-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {day.day}
-                      </p>
-                      <div className="mt-2 flex flex-col gap-2">
-                        {day.activities.map((act, ai) => {
-                          const Icon = activityIcon[act.kind] ?? ListChecks;
-                          return (
-                            <div key={ai} className="flex items-start gap-2.5">
-                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
-                                <Icon className="h-3.5 w-3.5" />
-                              </span>
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {act.title} <span className="text-xs text-muted-foreground">· {act.minutes} min</span>
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {act.subject} — {act.description}
-                                </p>
+                  {week.days.map((day, di) => {
+                    const date = getPlanDayDate(plan.generated_at, wi, day.day);
+                    const isHighlighted = date ? highlightedDates.has(date.toDateString()) : false;
+                    return (
+                      <div
+                        key={di}
+                        className={
+                          isHighlighted
+                            ? "rounded-lg border-2 p-3"
+                            : "rounded-lg border border-border p-3"
+                        }
+                        style={
+                          isHighlighted
+                            ? { borderColor: `color-mix(in srgb, ${college.color.bg} 45%, transparent)` }
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {day.day}
+                          </p>
+                          {date && isSameDay(date, today) && (
+                            <Badge className="rounded-full text-[0.65rem]">Today</Badge>
+                          )}
+                        </div>
+                        <div className="mt-2 flex flex-col gap-2">
+                          {day.activities.map((act, ai) => {
+                            const Icon = activityIcon[act.kind] ?? ListChecks;
+                            return (
+                              <div key={ai} className="flex items-start gap-2.5">
+                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+                                  <Icon className="h-3.5 w-3.5" />
+                                </span>
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    {act.title} <span className="text-xs text-muted-foreground">· {act.minutes} min</span>
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {act.subject} — {act.description}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

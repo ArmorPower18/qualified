@@ -21,7 +21,8 @@ import { DashboardExamTabs } from "@/components/dashboard-exam-tabs";
 import { DashboardTestDate } from "@/components/dashboard-test-date";
 import { GenerateStudyPlanButton } from "@/components/generate-study-plan-button";
 import { STATIC_COLLEGES, getStaticCollege } from "@/lib/colleges-static";
-import type { MockTestAttempt, ReviewAttempt, QuestionAttempt, TargetExam } from "@/lib/types";
+import { flattenPlanDays, isSameDay, resolveActivityHref } from "@/lib/study-plan";
+import type { MockTestAttempt, ReviewAttempt, QuestionAttempt, StudyPlan, TargetExam } from "@/lib/types";
 
 const modeLabels: Record<ReviewAttempt["mode"], string> = {
   flashcard: "Flashcards",
@@ -135,14 +136,19 @@ export default async function DashboardPage({
   const typedReviewAttempts = (reviewAttempts as ReviewAttempt[]) ?? [];
   const totalStudySeconds = typedReviewAttempts.reduce((sum, a) => sum + (a.duration_seconds ?? 0), 0);
 
-  const { data: studyPlan } = selectedCollegeId
+  const { data: studyPlanRow } = selectedCollegeId
     ? await supabase
         .from("study_plans")
-        .select("id, summary, generated_at")
+        .select("id, summary, generated_at, weeks")
         .eq("user_id", user.id)
         .eq("college_id", selectedCollegeId)
         .maybeSingle()
     : { data: null };
+  const studyPlan = studyPlanRow as StudyPlan | null;
+
+  const todaysFocus = studyPlan
+    ? flattenPlanDays(studyPlan).find((d) => isSameDay(d.date, new Date()))
+    : undefined;
 
   // Subject mastery: accuracy per subject from practice + review questions only.
   // Flashcards never write to question_attempts (self-reported, not graded), so they're
@@ -438,6 +444,58 @@ export default async function DashboardPage({
               <GenerateStudyPlanButton collegeSlug={selectedCollege.slug} accent={selectedCollege.color} />
             )}
           </CardContent>
+        </Card>
+      )}
+
+      {/* Today's focus, pulled from the study plan */}
+      {studyPlan && (
+        <Card className="studio-card mt-6">
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="eyebrow">Study plan</p>
+                <CardTitle className="mt-1 text-xl">Today&apos;s focus</CardTitle>
+              </div>
+              <Link href={`/study-plan/${selectedCollege.slug}`} className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-lg" })}>
+                Full plan <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <CardDescription>
+              {todaysFocus ? todaysFocus.weekFocus : "Nothing scheduled for today — check the full plan for what's next."}
+            </CardDescription>
+          </CardHeader>
+          {todaysFocus && (
+            <CardContent>
+              <div className="flex flex-col gap-3">
+                {todaysFocus.day.activities.map((act, i) => (
+                  <Link
+                    key={i}
+                    href={resolveActivityHref(act, selectedCollege.slug, selectedCollege.subjects)}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 transition-colors hover:border-foreground/30 hover:bg-muted/40"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="rounded-full text-[0.65rem] capitalize">
+                          {act.kind}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{act.minutes} min</span>
+                      </div>
+                      <p className="mt-1 truncate text-sm font-medium">{act.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {act.subject} — {act.description}
+                      </p>
+                    </div>
+                    <span
+                      className={buttonVariants({ size: "sm", className: "shrink-0 rounded-lg border-transparent" })}
+                      style={{ backgroundColor: selectedCollege.color.bg, color: selectedCollege.color.fg }}
+                    >
+                      Start
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          )}
         </Card>
       )}
 
