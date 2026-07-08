@@ -23,7 +23,10 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-foreground/15 bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
       <div className="editorial-shell flex h-16 items-center justify-between">
-        <Link href="/" className="group flex items-center gap-2 text-lg font-semibold text-foreground">
+        <Link
+          href={user ? "/dashboard" : "/"}
+          className="group flex items-center gap-2 text-lg font-semibold text-foreground"
+        >
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-foreground text-background transition-transform duration-300 group-hover:-rotate-3">
             <GraduationCap className="h-4.5 w-4.5" />
           </span>
