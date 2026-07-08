@@ -148,13 +148,23 @@ export default async function DashboardPage({
     if (a.is_correct) bucket.correct += 1;
     masteryBySubject.set(a.subject_label, bucket);
   }
+  // Confidence Factor: dampens mastery for low-volume subjects so a 3-question
+  // quiz can't read as 100% mastery. CF = N / (N + K); raw accuracy is scaled by
+  // it, so mastery only climbs toward the raw score once a subject has enough
+  // attempts behind it (CF -> 1 as N grows). K=5 is the reliability constant.
+  const RELIABILITY_CONSTANT = 5;
   const subjectMastery = Array.from(masteryBySubject.entries())
-    .map(([subject, { correct, total }]) => ({
-      subject,
-      correct,
-      total,
-      pct: Math.round((correct / total) * 100),
-    }))
+    .map(([subject, { correct, total }]) => {
+      const rawPct = Math.round((correct / total) * 100);
+      const confidence = total / (total + RELIABILITY_CONSTANT);
+      return {
+        subject,
+        correct,
+        total,
+        rawPct,
+        pct: Math.round(rawPct * confidence),
+      };
+    })
     .sort((a, b) => b.total - a.total);
 
   const weakestSubjects = subjectMastery
@@ -333,7 +343,8 @@ export default async function DashboardPage({
           <CardHeader>
             <CardTitle>Subject mastery</CardTitle>
             <CardDescription>
-              Accuracy from practice questions and review sessions (Flashcards don&apos;t count —
+              Accuracy from practice questions and review sessions, confidence-adjusted so a
+              handful of questions can&apos;t read as full mastery (Flashcards don&apos;t count —
               they&apos;re self-graded, not scored).
             </CardDescription>
           </CardHeader>
@@ -349,7 +360,8 @@ export default async function DashboardPage({
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{s.subject}</span>
                       <span className="text-muted-foreground">
-                        {s.correct}/{s.total} ({s.pct}%)
+                        {s.correct}/{s.total} correct · {s.pct}% mastery
+                        {s.pct !== s.rawPct && ` (${s.rawPct}% raw)`}
                       </span>
                     </div>
                     <Progress value={s.pct} className="mt-1.5" />
