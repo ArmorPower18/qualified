@@ -12,7 +12,7 @@ const highlights = [
   {
     icon: Timer,
     title: "Scheduled mock tests",
-    description: "Pro gets a fresh full-length mock test every two weeks. Unlimited gets one every week — timed, reviewed, and tracked.",
+    description: "Pro gets 2 full-length mock tests a month. Season Pass gets 4 — timed, reviewed, and tracked.",
   },
   {
     icon: Target,
@@ -31,7 +31,7 @@ const freeFeatures = [
 ];
 
 const freeLocked = [
-  "Mock test every 2 weeks",
+  "2 full-length mock tests/month",
   "AI study tutor & explanations",
   "AI-personalized reviewer",
   "Custom study pack generation",
@@ -39,7 +39,7 @@ const freeLocked = [
 
 const proFeatures = [
   "Everything in Free, ad-free",
-  "New full-length mock test every 2 weeks",
+  "2 full-length mock tests per month",
   "Unlimited flashcards with spaced repetition",
   "AI study tutor — explanations for every question",
   "AI-personalized reviewer from your mastery data",
@@ -49,7 +49,7 @@ const proFeatures = [
 
 const seasonPassFeatures = [
   "Everything in Pro",
-  "New full-length mock test every week",
+  "4 full-length mock tests per month",
   "Unlimited AI custom study packs",
   "Locked-in 20% discount for all 4 months",
   "Early access to new colleges & features",
