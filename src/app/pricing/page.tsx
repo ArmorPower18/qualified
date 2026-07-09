@@ -47,11 +47,11 @@ const proFeatures = [
   "3 AI custom study packs/month — any school, incl. Big 4",
 ];
 
-const lifetimeFeatures = [
+const seasonPassFeatures = [
   "Everything in Pro",
   "New full-length mock test every week",
   "Unlimited AI custom study packs",
-  "Price locked forever",
+  "Locked-in 20% discount for all 4 months",
   "Early access to new colleges & features",
 ];
 
@@ -163,23 +163,22 @@ export default function PricingPage() {
             </p>
           </div>
 
-          {/* Lifetime */}
+          {/* Season Pass */}
           <div className="relative flex flex-col rounded-2xl border border-foreground/15 bg-card p-6">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <Badge variant="secondary" className="rounded-full px-3 py-1 text-[0.7rem] uppercase tracking-[0.1em]">
-                Best value
+                Best deal
               </Badge>
             </div>
-            <p className="text-lg font-semibold text-foreground">Lifetime</p>
-            <p className="mt-1 text-sm text-muted-foreground">Everything in Pro, locked in for good.</p>
+            <p className="text-lg font-semibold text-foreground">Season Pass</p>
+            <p className="mt-1 text-sm text-muted-foreground">4 months of Pro, more features, one payment.</p>
             <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-4xl font-semibold text-foreground">₱799</span>
-              <span className="text-sm text-muted-foreground">/month</span>
+              <span className="text-4xl font-semibold text-foreground">₱1,599</span>
             </div>
-            <p className="text-xs text-muted-foreground">per month</p>
+            <p className="text-xs text-muted-foreground">for 4 months · 20% off</p>
 
             <ul className="mt-6 flex flex-1 flex-col gap-2.5">
-              {lifetimeFeatures.map((f) => (
+              {seasonPassFeatures.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-foreground">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   {f}
@@ -188,14 +187,14 @@ export default function PricingPage() {
             </ul>
 
             <Link
-              href="/signup?plan=lifetime"
+              href="/signup?plan=season-pass"
               className={buttonVariants({ variant: "outline", size: "lg", className: "mt-6 w-full rounded-md" })}
             >
-              Get lifetime access
+              Get the Season Pass
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              ₱799/month. Cancel anytime.
+              One payment. Covers 4 months — 20% off for more features than Pro.
             </p>
           </div>
         </div>
