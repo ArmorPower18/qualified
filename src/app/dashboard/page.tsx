@@ -80,9 +80,10 @@ function StatTile({
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ exam?: string }>;
+  searchParams: Promise<{ exam?: string; subjects?: string }>;
 }) {
-  const { exam: examParam } = await searchParams;
+  const { exam: examParam, subjects: subjectsParam } = await searchParams;
+  const showAllSubjects = subjectsParam === "all";
   const supabase = await createClient();
   const user = await supabase.auth
     .getUser()
@@ -170,12 +171,12 @@ export default async function DashboardPage({
   // Subject mastery: accuracy per subject from practice + review questions only.
   // Flashcards never write to question_attempts (self-reported, not graded), so they're
   // excluded automatically. Scoped to this exam's practice/exam-focus attempts plus
-  // exam-agnostic general review (college_id null on those), same rule as time studied.
-  const { data: questionAttempts } = await supabase
-    .from("question_attempts")
-    .select("*")
-    .eq("user_id", user.id)
-    .or(examOrGeneralFilter);
+  // exam-agnostic general review (college_id null on those) by default — toggleable
+  // to every exam at once via the "View all subjects" link on the card.
+  const questionAttemptsQuery = supabase.from("question_attempts").select("*").eq("user_id", user.id);
+  const { data: questionAttempts } = showAllSubjects
+    ? await questionAttemptsQuery
+    : await questionAttemptsQuery.or(examOrGeneralFilter);
 
   const typedQuestionAttempts = (questionAttempts as QuestionAttempt[]) ?? [];
   const masteryBySubject = new Map<string, { correct: number; total: number }>();
@@ -382,11 +383,23 @@ export default async function DashboardPage({
       <div className="mt-6 grid items-start gap-5 md:grid-cols-[1.3fr_0.7fr]">
         <Card className="studio-card">
           <CardHeader>
-            <CardTitle>Subject mastery</CardTitle>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <CardTitle>Subject mastery</CardTitle>
+              <Link
+                href={
+                  showAllSubjects
+                    ? `/dashboard?exam=${selectedSlug}`
+                    : `/dashboard?exam=${selectedSlug}&subjects=all`
+                }
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                {showAllSubjects ? `Show only ${selectedCollege.examName}` : "View all subjects"}
+              </Link>
+            </div>
             <CardDescription>
-              Accuracy from practice questions and review sessions, confidence-adjusted so a
-              handful of questions can&apos;t read as full mastery (Flashcards don&apos;t count —
-              they&apos;re self-graded, not scored).
+              {showAllSubjects
+                ? "Accuracy across every exam you've practiced, confidence-adjusted so a handful of questions can't read as full mastery (Flashcards don't count — they're self-graded, not scored)."
+                : `Accuracy from practice questions and review sessions for ${selectedCollege.examName}, confidence-adjusted so a handful of questions can't read as full mastery (Flashcards don't count — they're self-graded, not scored).`}
             </CardDescription>
           </CardHeader>
           <CardContent>
