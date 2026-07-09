@@ -115,7 +115,8 @@ export default async function StudyPlanPage({
         <DashboardExamTabs
           selectedSlug={collegeSlug}
           slugToId={slugToId}
-          hrefFor={(slug) => `/study-plan/${slug}`}
+          basePath="/study-plan"
+          linkMode="path"
         />
       </div>
 

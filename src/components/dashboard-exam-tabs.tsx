@@ -10,17 +10,24 @@ import { STATIC_COLLEGES } from "@/lib/colleges-static";
 export function DashboardExamTabs({
   selectedSlug,
   slugToId,
-  hrefFor = (slug) => `/dashboard?exam=${slug}`,
+  basePath = "/dashboard",
+  linkMode = "query",
 }: {
   selectedSlug: string;
   slugToId: Record<string, string>;
   // Lets other exam-scoped pages (e.g. the study plan page, which is path-based
-  // rather than dashboard's ?exam= query param) reuse the same tab strip.
-  hrefFor?: (slug: string) => string;
+  // rather than dashboard's ?exam= query param) reuse the same tab strip. Plain
+  // strings only — a function prop here can't cross the server/client boundary.
+  basePath?: string;
+  linkMode?: "query" | "path";
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [isPending, startTransition] = useTransition();
+
+  function hrefFor(slug: string) {
+    return linkMode === "path" ? `${basePath}/${slug}` : `${basePath}?exam=${slug}`;
+  }
 
   function selectExam(slug: string) {
     if (slug === selectedSlug || isPending) return;
