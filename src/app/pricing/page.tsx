@@ -137,7 +137,7 @@ export default function PricingPage() {
             <p className="text-lg font-semibold text-foreground">Pro</p>
             <p className="mt-1 text-sm text-muted-foreground">All schools, scheduled mocks, AI-powered.</p>
             <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-4xl font-semibold text-foreground">₱399</span>
+              <span className="text-4xl font-semibold text-foreground">₱499</span>
               <span className="text-sm text-muted-foreground">/month</span>
             </div>
             <p className="text-xs text-muted-foreground">per month</p>
@@ -159,7 +159,7 @@ export default function PricingPage() {
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              3 days free, then ₱399/month. Cancel anytime.
+              3 days free, then ₱499/month. Cancel anytime.
             </p>
           </div>
 
