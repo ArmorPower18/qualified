@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { GenerateStudyPlanButton } from "@/components/generate-study-plan-button";
+import { DashboardExamTabs } from "@/components/dashboard-exam-tabs";
 import { flattenPlanDays, getPlanDayDate, isSameDay, resolveActivityHref } from "@/lib/study-plan";
 import type { StudyPlan, StudyPlanActivity } from "@/lib/types";
 
@@ -43,6 +44,9 @@ export default async function StudyPlanPage({
 
   const { data: collegeRow } = await supabase.from("colleges").select("id").eq("slug", collegeSlug).single();
   const collegeId = collegeRow?.id;
+
+  const { data: collegeRows } = await supabase.from("colleges").select("id, slug").eq("is_custom", false);
+  const slugToId = Object.fromEntries((collegeRows ?? []).map((c) => [c.slug as string, c.id as string]));
 
   const { count: attemptCount } = collegeId
     ? await supabase
@@ -98,14 +102,21 @@ export default async function StudyPlanPage({
 
   return (
     <div className="editorial-shell max-w-4xl py-10">
-      <div className="border-b border-foreground/15 pb-6">
-        <p className="eyebrow">Study plan</p>
-        <h1 className="mt-3 text-4xl font-semibold leading-tight md:text-5xl">
-          Your {college.examName} study plan
-        </h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Built from your pre-test results and subject mastery — prioritizing your weakest areas first.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-foreground/15 pb-6">
+        <div>
+          <p className="eyebrow">Study plan</p>
+          <h1 className="mt-3 text-4xl font-semibold leading-tight md:text-5xl">
+            Your {college.examName} study plan
+          </h1>
+          <p className="mt-3 max-w-2xl text-muted-foreground">
+            Built from your pre-test results and subject mastery — prioritizing your weakest areas first.
+          </p>
+        </div>
+        <DashboardExamTabs
+          selectedSlug={collegeSlug}
+          slugToId={slugToId}
+          hrefFor={(slug) => `/study-plan/${slug}`}
+        />
       </div>
 
       {!attemptCount ? (

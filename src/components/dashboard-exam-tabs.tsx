@@ -10,9 +10,13 @@ import { STATIC_COLLEGES } from "@/lib/colleges-static";
 export function DashboardExamTabs({
   selectedSlug,
   slugToId,
+  hrefFor = (slug) => `/dashboard?exam=${slug}`,
 }: {
   selectedSlug: string;
   slugToId: Record<string, string>;
+  // Lets other exam-scoped pages (e.g. the study plan page, which is path-based
+  // rather than dashboard's ?exam= query param) reuse the same tab strip.
+  hrefFor?: (slug: string) => string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -21,7 +25,7 @@ export function DashboardExamTabs({
   function selectExam(slug: string) {
     if (slug === selectedSlug || isPending) return;
     startTransition(() => {
-      router.push(`/dashboard?exam=${slug}`);
+      router.push(hrefFor(slug));
     });
     const collegeId = slugToId[slug];
     if (!collegeId) return;
