@@ -378,7 +378,7 @@ export default async function DashboardPage({
         />
       </div>
 
-      {/* Mastery + time studied */}
+      {/* Mastery + time studied/study plan */}
       <div className="mt-6 grid items-start gap-5 md:grid-cols-[1.3fr_0.7fr]">
         <Card className="studio-card">
           <CardHeader>
@@ -413,61 +413,66 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
 
-        <Card className="studio-card">
-          <CardHeader className="text-center">
-            <CardTitle>Time studied</CardTitle>
-            <CardDescription>Across all review sessions</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center text-center">
-            <p className="text-5xl font-semibold text-primary">{formatDuration(totalStudySeconds)}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {typedReviewAttempts.length} session{typedReviewAttempts.length === 1 ? "" : "s"} completed
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="flex flex-col gap-5">
+          <Card className="studio-card">
+            <CardHeader className="text-center">
+              <CardTitle>Time studied</CardTitle>
+              <CardDescription>Across all review sessions</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center text-center">
+              <p className="text-5xl font-semibold text-primary">{formatDuration(totalStudySeconds)}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {typedReviewAttempts.length} session{typedReviewAttempts.length === 1 ? "" : "s"} completed
+              </p>
+            </CardContent>
+          </Card>
 
-      {/* Study plan */}
-      {testsCompleted > 0 && (
-        <Card
-          className="mt-6 rounded-xl border-2 bg-card"
-          style={{ borderColor: `color-mix(in srgb, ${selectedCollege.color.bg} 30%, transparent)` }}
-        >
-          <CardContent className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${selectedCollege.color.bg} 14%, transparent)`,
-                  color: selectedCollege.color.bg,
-                }}
-              >
-                <Sparkles className="h-4.5 w-4.5" />
-              </span>
-              <div>
-                <p className="font-semibold">
-                  {studyPlan ? `Your ${selectedCollege.examName} study plan` : "Build your study plan"}
-                </p>
-                <p className="mt-0.5 max-w-md text-sm text-muted-foreground">
-                  {studyPlan
-                    ? (studyPlan.summary ?? `Updated ${new Date(studyPlan.generated_at).toLocaleDateString()}.`)
-                    : "AI-built from your pre-test results and weakest subjects, paced against your test date."}
-                </p>
-              </div>
-            </div>
-            {studyPlan ? (
-              <Link
-                href={`/study-plan/${selectedCollege.slug}`}
-                className={buttonVariants({ variant: "outline", className: "shrink-0 rounded-lg" })}
-              >
-                View plan
-              </Link>
-            ) : (
-              <GenerateStudyPlanButton collegeSlug={selectedCollege.slug} accent={selectedCollege.color} />
-            )}
-          </CardContent>
-        </Card>
-      )}
+          {testsCompleted > 0 && (
+            <Card
+              className="rounded-xl border-2 bg-card"
+              style={{ borderColor: `color-mix(in srgb, ${selectedCollege.color.bg} 30%, transparent)` }}
+            >
+              <CardContent className="flex flex-col items-start gap-3">
+                <div className="flex items-start gap-3">
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${selectedCollege.color.bg} 14%, transparent)`,
+                      color: selectedCollege.color.bg,
+                    }}
+                  >
+                    <Sparkles className="h-4.5 w-4.5" />
+                  </span>
+                  <div>
+                    <p className="font-semibold">
+                      {studyPlan ? `Your ${selectedCollege.examName} study plan` : "Build your study plan"}
+                    </p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {studyPlan
+                        ? (studyPlan.summary ?? `Updated ${new Date(studyPlan.generated_at).toLocaleDateString()}.`)
+                        : "AI-built from your pre-test results and weakest subjects, paced against your test date."}
+                    </p>
+                  </div>
+                </div>
+                {studyPlan ? (
+                  <Link
+                    href={`/study-plan/${selectedCollege.slug}`}
+                    className={buttonVariants({ variant: "outline", className: "w-full rounded-lg" })}
+                  >
+                    View plan
+                  </Link>
+                ) : (
+                  <GenerateStudyPlanButton
+                    collegeSlug={selectedCollege.slug}
+                    accent={selectedCollege.color}
+                    fullWidth
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
 
       {/* Today's focus, pulled from the study plan */}
       {studyPlan && (

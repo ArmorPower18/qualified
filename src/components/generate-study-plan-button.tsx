@@ -9,10 +9,12 @@ export function GenerateStudyPlanButton({
   collegeSlug,
   label = "Build my study plan",
   accent,
+  fullWidth = false,
 }: {
   collegeSlug: string;
   label?: string;
   accent?: { bg: string; fg: string };
+  fullWidth?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ export function GenerateStudyPlanButton({
       <Button
         onClick={generate}
         disabled={loading}
-        className="rounded-lg border-transparent"
+        className={fullWidth ? "w-full rounded-lg border-transparent" : "rounded-lg border-transparent"}
         style={accent ? { backgroundColor: accent.bg, color: accent.fg } : undefined}
       >
         {loading ? (
