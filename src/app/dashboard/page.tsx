@@ -414,13 +414,13 @@ export default async function DashboardPage({
         </Card>
 
         <Card className="studio-card">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle>Time studied</CardTitle>
             <CardDescription>Across all review sessions</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-semibold text-primary">{formatDuration(totalStudySeconds)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="text-5xl font-semibold text-primary">{formatDuration(totalStudySeconds)}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
               {typedReviewAttempts.length} session{typedReviewAttempts.length === 1 ? "" : "s"} completed
             </p>
           </CardContent>
