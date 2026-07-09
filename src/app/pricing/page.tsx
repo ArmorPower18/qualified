@@ -171,11 +171,12 @@ export default function PricingPage() {
               </Badge>
             </div>
             <p className="text-lg font-semibold text-foreground">Lifetime</p>
-            <p className="mt-1 text-sm text-muted-foreground">Pay once, Pro forever.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Everything in Pro, locked in for good.</p>
             <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-4xl font-semibold text-foreground">₱1,999</span>
+              <span className="text-4xl font-semibold text-foreground">₱799</span>
+              <span className="text-sm text-muted-foreground">/month</span>
             </div>
-            <p className="text-xs text-muted-foreground">one-time payment</p>
+            <p className="text-xs text-muted-foreground">per month</p>
 
             <ul className="mt-6 flex flex-1 flex-col gap-2.5">
               {lifetimeFeatures.map((f) => (
@@ -194,7 +195,7 @@ export default function PricingPage() {
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              One payment. No renewals, ever.
+              ₱799/month. Cancel anytime.
             </p>
           </div>
         </div>
