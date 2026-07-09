@@ -379,7 +379,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Mastery + time studied */}
-      <div className="mt-6 grid gap-5 md:grid-cols-[1.3fr_0.7fr]">
+      <div className="mt-6 grid items-start gap-5 md:grid-cols-[1.3fr_0.7fr]">
         <Card className="studio-card">
           <CardHeader>
             <CardTitle>Subject mastery</CardTitle>
@@ -418,7 +418,7 @@ export default async function DashboardPage({
             <CardTitle>Time studied</CardTitle>
             <CardDescription>Across all review sessions</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
+          <CardContent className="flex flex-col items-center text-center">
             <p className="text-5xl font-semibold text-primary">{formatDuration(totalStudySeconds)}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {typedReviewAttempts.length} session{typedReviewAttempts.length === 1 ? "" : "s"} completed
